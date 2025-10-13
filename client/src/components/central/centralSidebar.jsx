@@ -15,7 +15,7 @@ import {
 const CentralSidebar = () => {
     return (
         <div>
-            <div className="bg-white shadow-md w-64 h-screen p-4 flex flex-col border-r border-gray-200">
+            <div className="fixed top-0 left-0 bg-white shadow-md w-64 h-screen p-4 flex flex-col border-r border-gray-200 mt-10">
                 <h1 className="text-xl font-semibold text-gray-800 mb-6 text-center">
                     State Officer Dashboard
                 </h1>

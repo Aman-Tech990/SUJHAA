@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 const StateSidebar = () => {
     return (
-        <aside className="bg-blue-50 min-h-screen p-6 w-64 md:block fixed md:relative z-50">
+        <aside className="fixed top-0 left-0 bg-blue-50 min-h-screen p-6 w-64 md:block md:relative z-50">
             <ul className="space-y-3">
                 <li>
                     <Link to="/state" className="hover:text-blue-700 cursor-pointer font-semibold text-lg">

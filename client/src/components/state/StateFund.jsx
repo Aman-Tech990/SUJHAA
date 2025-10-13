@@ -87,7 +87,7 @@ const StateFund = () => {
     const handleAction = (action) => alert(`${action} executed!`);
 
     return (
-        <div className="p-4 sm:p-6 bg-gray-50 min-h-screen space-y-6">
+        <div className="p-4 sm:p-6 bg-gray-50 min-h-screen space-y-6 flex-1">
             <h2 className="text-2xl font-bold text-gray-800">Fund Allocation & Disbursement</h2>
 
             {/* Summary Cards */}

@@ -84,7 +84,7 @@ const StateTraining = () => {
     const totalTrained = trainingCenters.reduce((acc, c) => acc + c.completed, 0);
 
     return (
-        <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+        <div className="p-4 sm:p-6 bg-gray-50 min-h-screen flex-1">
             <h2 className="text-2xl font-bold mb-6 text-gray-800">Training & Skill Development</h2>
 
             {/* Summary Cards */}

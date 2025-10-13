@@ -19,9 +19,9 @@ import StateFund from './components/state/StateFund.jsx';
 import StateTraining from './components/state/StateTraining.jsx';
 import DistrictLayout from './components/layouts/DistrictLayout.jsx';
 import DistrictDashboard from './components/district/DistrictDashboard.jsx';
-import centralLayout from './components/layouts/CentralLayout.jsx';
-import centralDashBoard from './components/central/centralDashBoard.jsx';
 import LandingPage from './components/main/LandingPage';
+import CentralDashBoard from './components/central/centralDashBoard';
+import CentralLayout from './components/layouts/CentralLayout';
 
 const router = createBrowserRouter([
   { path: "/", element: <LandingPage /> },
@@ -56,9 +56,9 @@ const router = createBrowserRouter([
   },
   {
     path: "/central",
-    element: <centralLayout />,
+    element: <CentralLayout />,
     children: [
-      { index: true, element: <centralDashBoard /> },
+      { index: true, element: <CentralDashBoard /> },
     ]
   },
 ]);
