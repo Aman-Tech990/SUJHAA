@@ -1,7 +1,9 @@
 import jwt from "jsonwebtoken";
 
 export const auth = (req, res, next) => {
-    const token = req.headers.authorization?.split(" ")[1];
+    const cookieToken = req.cookies?.token;
+
+    const token = cookieToken;
 
     if (!token)
         return res.status(401).json({ message: "No token provided" });
@@ -9,7 +11,7 @@ export const auth = (req, res, next) => {
     try {
         req.user = jwt.verify(token, process.env.JWT_SECRET);
         next();
-    } catch {
+    } catch (err) {
         return res.status(401).json({ message: "Invalid token" });
     }
 };

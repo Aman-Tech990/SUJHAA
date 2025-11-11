@@ -10,6 +10,10 @@ router.post("/",
     auth,
     allowRoles("Beneficiary", "FieldOfficer", "DistrictOfficer", "StateOfficer", "CentralAdmin"),
     createBeneficiary);
-router.post("/:id/upload", auth, upload.single("file"), uploadDocument);
+router.post("/:id/upload",
+    auth,
+    allowRoles("FieldOfficer", "DistrictOfficer", "StateOfficer", "CentralAdmin"),
+    upload.single("file"),
+    uploadDocument);
 
 export default router;
