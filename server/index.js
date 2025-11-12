@@ -6,6 +6,7 @@ import { connectDB } from "./database/connectDB.js";
 import authRoutes from "./routes/auth.routes.js";
 import beneficiaryRoutes from "./routes/beneficiary.routes.js";
 import feedbackRoutes from "./routes/feedback.routes.js";
+import schemeRoutes from "./routes/scheme.routes.js";
 import verificationRoutes from "./routes/verification.routes.js";
 import misRoutes from "./routes/mis.routes.js";
 import cookieParser from "cookie-parser";
@@ -37,6 +38,7 @@ app.use("/api/v1/beneficiaries", beneficiaryRoutes);
 app.use("/api/v1/feedback", feedbackRoutes);
 app.use("/api/v1/verifications", verificationRoutes);
 app.use("/api/v1/mis", misRoutes);
+app.use("/api/v1/schemes", schemeRoutes);
 
 // Check
 app.get("/", (req, res) => {
