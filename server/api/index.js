@@ -1,11 +1,11 @@
 // Load environment variables
-import dotenv from 'dotenv';
-dotenv.config();
+import dotenv from "dotenv";
+dotenv.config({});
 
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
-import connectDB from '../config/database.js';
+import connectDB from "../config/database.js";
 
 const app = express();
 
@@ -13,7 +13,14 @@ const app = express();
 connectDB();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: [
+        "http://localhost:5173",
+        "https://sujhaa-frontend.vercel.app"
+    ],
+    credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
