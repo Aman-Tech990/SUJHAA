@@ -31,15 +31,9 @@ const trainingCenterSchema = new mongoose.Schema({
         required: true
     },
 
-    district_id: {
-        type: String,
-        required: true
-    },
+    district: { type: String, required: true },
 
-    state_id: {
-        type: String,
-        required: true
-    },
+    state: { type: String, required: true },
 
     // Location
     latitude: {

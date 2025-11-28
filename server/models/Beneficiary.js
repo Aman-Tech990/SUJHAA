@@ -1,99 +1,85 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const beneficiarySchema = new mongoose.Schema({
-    // Digital ID
-    beneficiary_id: {
-        type: String,
-        unique: true,
-        required: true
-    },
+    digitalId: { type: String, required: true, unique: true },
 
-    // Personal Information
-    name: {
-        type: String,
-        required: true
-    },
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    phone: { type: String, required: true },
 
-    aadhaar_number: {
-        type: String,
-        required: true,
-        unique: true
-    },
+    aadhaarNumber: { type: String, required: true, unique: true },
+    address: { type: String, required: true },
+    district: { type: String, required: true },
+    state: { type: String, required: true },
 
-    mobile_number: {
-        type: String,
-        required: true,
-        unique: true
-    },
+    // Documents
+    regPhotoUrl: { type: String, required: true },
+    aadhaarUrl: String,
+    casteCertificateUrl: String,
+    domicileUrl: String,
+    incomeCertificateUrl: String,   // FIXED camelCase
 
-    email: {
-        type: String,
-        required: true,
-        unique: true
-    },
+    passwordHash: { type: String, required: true },
 
-    password: {
-        type: String,
-        required: true
-    },
+    latitude: Number,
+    longitude: Number,
 
-    // Address
-    address_text: {
-        type: String,
-        required: true
-    },
+    isVerified: { type: Boolean, default: false },
+    otpCode: String,
+    otpExpiresAt: Date,
 
-    registered_lat: {
-        type: Number,
-        required: true
-    },
+    // Applications
+    applications: [
+        {
+            applicationRefId: { type: String, unique: true },
 
-    registered_lng: {
-        type: Number,
-        required: true
-    },
+            schemeName: String,
 
-    // Photo URL (from Cloudinary)
-    reg_photo_url: {
-        type: String,
-        required: true
-    },
+            schemeCategory: {
+                type: String,
+                enum: ["INCOME_GENERATION", "SKILL_DEVELOPMENT", "INFRASTRUCTURE_SUPPORT"]
+            },
 
-    // Location IDs
-    district_id: {
-        type: String,
-        required: true
-    },
+            appliedAt: { type: Date, default: Date.now },
 
-    state_id: {
-        type: String,
-        required: true
-    },
+            status: {
+                type: String,
+                enum: ["PENDING", "UNDER_VERIFICATION", "APPROVED", "REJECTED"],
+                default: "PENDING"
+            },
 
-    // Status
-    is_verified: {
-        type: Boolean,
-        default: false
-    },
+            statusHistory: [
+                {
+                    status: String,
+                    changedAt: { type: Date, default: Date.now },
+                    changedByRole: String,
+                    changedById: String
+                }
+            ],
 
-    is_active: {
-        type: Boolean,
-        default: true
-    },
+            fieldOfficerVerification: {
+                verified: { type: Boolean, default: false },
+                officerId: String,
+                photoUrl: String,
+                latitude: Number,
+                longitude: Number,
+                timestamp: Date
+            },
 
-    // OTP
-    otp: {
-        type: String
-    },
+            districtOfficerComments: String,
+            districtOfficerId: String,
 
-    otp_expiry: {
-        type: Date
-    }
+            stateOfficerComments: String,
+            stateOfficerId: String,
 
-}, {
-    timestamps: true
+            trainingCenterAssigned: String,
+            trainingStartDate: Date,
+            trainingEndDate: Date,
+            trainingProgress: { type: Number, default: 0 }
+        }
+    ],
+
+    createdAt: { type: Date, default: Date.now }
 });
 
-const Beneficiary = mongoose.model('Beneficiary', beneficiarySchema);
-
-export default Beneficiary;
+export default mongoose.model("Beneficiary", beneficiarySchema);

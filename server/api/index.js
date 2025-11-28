@@ -4,8 +4,9 @@ dotenv.config({});
 
 import express from 'express';
 import cors from 'cors';
-import mongoose from 'mongoose';
 import connectDB from "../config/database.js";
+import authRoutes from "../routes/auth.routes.js";
+import ocrRoutes from "../routes/ocr.routes.js";
 
 const app = express();
 
@@ -34,50 +35,9 @@ app.get('/', (req, res) => {
     });
 });
 
-// API Info Route
-app.get('/api', (req, res) => {
-    res.status(200).json({
-        success: true,
-        message: 'SUJHAA API v1.0',
-        endpoints: {
-            health: 'GET /',
-            info: 'GET /api',
-            auth: {
-                register: 'POST /api/auth/register',
-                login: 'POST /api/auth/login'
-            },
-            beneficiary: {
-                profile: 'GET /api/beneficiary/profile',
-                schemes: 'GET /api/beneficiary/schemes',
-                apply: 'POST /api/beneficiary/apply'
-            },
-            officer: {
-                dashboard: 'GET /api/officer/dashboard',
-                verify: 'POST /api/officer/verify'
-            }
-        }
-    });
-});
-
-// Test MongoDB Connection Route
-app.get('/api/health', async (req, res) => {
-    try {
-        const dbStatus = mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected';
-
-        res.status(200).json({
-            success: true,
-            message: 'Health check',
-            database: dbStatus,
-            timestamp: new Date().toISOString()
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Health check failed',
-            error: error.message
-        });
-    }
-});
+// APIs Routes
+app.use("/api/ocr", ocrRoutes);
+app.use("/api/auth", authRoutes);
 
 // 404 Handler
 app.use((req, res) => {
@@ -100,7 +60,7 @@ app.use((err, req, res, next) => {
 
 // For local development
 if (process.env.NODE_ENV !== 'production') {
-    const PORT = process.env.PORT || 5000;
+    const PORT = process.env.PORT || 5005;
     app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
     });

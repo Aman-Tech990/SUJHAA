@@ -31,15 +31,8 @@ const fieldOfficerSchema = new mongoose.Schema({
     },
 
     // Location Assignment
-    district_id: {
-        type: String,
-        required: true
-    },
-
-    state_id: {
-        type: String,
-        required: true
-    },
+    district: { type: String, required: true },
+    state: { type: String, required: true },
 
     assigned_region: {
         type: String,

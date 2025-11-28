@@ -30,16 +30,9 @@ const districtOfficerSchema = new mongoose.Schema({
         required: true
     },
 
-    // Location Assignment
-    district_id: {
-        type: String,
-        required: true
-    },
+    district: { type: String, required: true },
 
-    state_id: {
-        type: String,
-        required: true
-    },
+    state: { type: String, required: true },
 
     // Status
     is_active: {

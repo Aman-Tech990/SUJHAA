@@ -31,10 +31,7 @@ const stateOfficerSchema = new mongoose.Schema({
     },
 
     // Location Assignment
-    state_id: {
-        type: String,
-        required: true
-    },
+    state: { type: String, required: true },
 
     // Status
     is_active: {
