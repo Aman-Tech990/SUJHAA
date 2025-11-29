@@ -24,11 +24,7 @@ connectDB();
 
 // Middleware
 app.use(cors({
-    origin: [
-        "http://localhost:5173",
-        "https://sujhaa-frontend.vercel.app"
-    ],
-    credentials: true
+    origin: "*",
 }));
 
 app.use(express.json());
