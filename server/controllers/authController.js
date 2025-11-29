@@ -157,7 +157,7 @@ export const universalLogin = async (req, res) => {
         let user = null;
         let role = null;
 
-        // 2️⃣ Identify user type
+        // Identify user type
         if (digitalId.startsWith("SUJHAA")) {
             user = await Beneficiary.findOne({ digitalId })
             role = "BENEFICIARY";
