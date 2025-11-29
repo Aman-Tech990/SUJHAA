@@ -27,10 +27,10 @@ const DistrictDashboard = () => {
   // KPI Data
   const stats = [
     // Added 'textColor' to ensure Tailwind renders the icons correctly
-    { label: 'Total Applications', value: '133', change: '+12%', icon: Users, color: 'bg-blue-500', textColor: 'text-blue-500' },
-    { label: 'Pending Approval', value: '45', change: 'Urgent', icon: Clock, color: 'bg-amber-500', textColor: 'text-amber-500' },
-    { label: 'Funds Disbursed', value: '₹42.5L', change: '85% of Goal', icon: IndianRupee, color: 'bg-green-600', textColor: 'text-green-600' },
-    { label: 'Avg. Feedback Score', value: '4.2/5', change: '+0.3', icon: TrendingUp, color: 'bg-purple-500', textColor: 'text-purple-500' },
+    { label: 'Total Applications', value: '133', change: '+12%', icon: Users, color: 'bg-blue-500'},
+    { label: 'Pending Approval', value: '45', change: 'Urgent', icon: Clock, color: 'bg-amber-500'},
+    { label: 'Funds Disbursed', value: '₹42.5L', change: '85% of Goal', icon: IndianRupee, color: 'bg-green-600'},
+    { label: 'Avg. Feedback Score', value: '4.2/5', change: '+0.3', icon: TrendingUp, color: 'bg-purple-500'},
   ];
 
   // Chart Data: Application Status (Pie)

@@ -26,7 +26,7 @@ const MOCK_DB = {
     scheme: "Skill Development Training",
     status: "Verified by Field Officer",
     fieldOfficerNote: "Candidate visited. Shop location verified. Tools are present.",
-    documents: ["Aadhaar Card", "Caste Certificate", "Income Certificate"]
+    documents: ["Domicile Certificate", "Caste Certificate", "Income Certificate"]
   },
   102: {
     name: "Sunita Devi",
@@ -40,7 +40,7 @@ const MOCK_DB = {
     scheme: "Income Generation Scheme",
     status: "Verified by Field Officer",
     fieldOfficerNote: "Cattle shed construction complete. Verified physical assets.",
-    documents: ["Aadhaar Card", "Bank Passbook", "Land Record"]
+    documents: ["Domicile Certificate", "Caste Certificate", "Income Certificate"]
   }
 };
 
