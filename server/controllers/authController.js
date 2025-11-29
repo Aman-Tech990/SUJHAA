@@ -5,6 +5,7 @@ import { generateDigitalId } from "../utils/generateDigitalId.js";
 import { sendOtpEmail } from "../services/email.service.js";
 import { uploadBufferToCloudinary } from "../services/cloudinary.service.js";
 import { getCoordinates } from "../services/geocode.service.js";
+import Officer from "../models/Officer.js";
 
 // Generate 6-digit OTP
 function generateOtp() {
@@ -16,15 +17,28 @@ function generateOtp() {
 // ==========================
 export const registerBeneficiary = async (req, res) => {
     try {
-        const { name, email, phone, aadhaarNumber, address, password } = req.body;
+        const {
+            name,
+            gender,
+            email,
+            phone,
+            aadhaarNumber,
+            address,
+            district,
+            state,
+            password
+        } = req.body;
 
         const regPhoto = req.file;
 
         if (!regPhoto) {
-            return res.status(400).json({ success: false, message: "Registration photo required" });
+            return res.status(400).json({
+                success: false,
+                message: "Registration photo required"
+            });
         }
 
-        // Check if email or Aadhaar already exists
+        // Check duplicate Aadhaar or email
         const existing = await Beneficiary.findOne({
             $or: [{ email }, { aadhaarNumber }]
         });
@@ -38,7 +52,6 @@ export const registerBeneficiary = async (req, res) => {
 
         // STEP 1: Convert Address -> Lat/Lng
         const { lat, lng } = await getCoordinates(address);
-        console.log("Geo:", lat, lng);
 
         // STEP 2: Upload photo to Cloudinary
         const regPhotoUrl = await uploadBufferToCloudinary(
@@ -52,14 +65,17 @@ export const registerBeneficiary = async (req, res) => {
         const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
         const passwordHash = await bcrypt.hash(password, 10);
 
-        // Create user
+        // Create beneficiary
         await Beneficiary.create({
             digitalId,
             name,
+            gender,
             email,
             phone,
             aadhaarNumber,
             address,
+            district,
+            state,
             regPhotoUrl,
             latitude: lat,
             longitude: lng,
@@ -72,7 +88,7 @@ export const registerBeneficiary = async (req, res) => {
         // Send OTP email
         await sendOtpEmail({ to: email, name, digitalId, otp });
 
-        res.json({
+        return res.json({
             success: true,
             message: "Registration successful. OTP sent to email.",
             digitalId
@@ -80,7 +96,10 @@ export const registerBeneficiary = async (req, res) => {
 
     } catch (err) {
         console.error("REGISTER ERROR:", err);
-        res.status(500).json({ success: false, message: err.message });
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
     }
 };
 
@@ -93,78 +112,140 @@ export const verifyOtp = async (req, res) => {
 
         const user = await Beneficiary.findOne({ digitalId });
 
-        if (!user) return res.status(400).json({ success: false, message: "Invalid Digital ID" });
-        if (user.otpCode !== otp) return res.status(400).json({ success: false, message: "Invalid OTP" });
+        if (!user)
+            return res.status(400).json({ success: false, message: "Invalid Digital ID" });
+
+        if (user.otpCode !== otp)
+            return res.status(400).json({ success: false, message: "Invalid OTP" });
 
         if (user.otpExpiresAt < new Date())
             return res.status(400).json({ success: false, message: "OTP expired" });
 
-        // Verify account
         user.isVerified = true;
         user.otpCode = null;
         user.otpExpiresAt = null;
         await user.save();
 
-        res.json({ success: true, message: "OTP verified successfully" });
+        return res.json({
+            success: true,
+            message: "OTP verified successfully"
+        });
 
     } catch (err) {
-        console.log(err.message);
-        res.status(500).json({ success: false, message: err.message });
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
     }
 };
 
 // ==========================
-// LOGIN (JWT COOKIE)
+// LOGIN BENEFICIARY
 // ==========================
-export const loginBeneficiary = async (req, res) => {
+export const universalLogin = async (req, res) => {
     try {
         const { digitalId, password } = req.body;
 
-        const user = await Beneficiary.findOne({ digitalId });
-        if (!user) return res.status(400).json({ success: false, message: "Invalid credentials" });
+        // 1️⃣ Validate input
+        if (!digitalId || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "Digital ID and password are required"
+            });
+        }
 
-        if (!user.isVerified)
-            return res.status(403).json({ success: false, message: "Account not verified" });
+        let user = null;
+        let role = null;
 
+        // 2️⃣ Identify user type
+        if (digitalId.startsWith("SUJHAA")) {
+            user = await Beneficiary.findOne({ digitalId })
+            role = "BENEFICIARY";
+        }
+        else if (digitalId.startsWith("ADMIN")) {
+            user = await Officer.findOne({ officerId: digitalId });
+            role = "CENTRAL_ADMIN";
+        }
+        else if (digitalId.startsWith("FO")) {
+            user = await Officer.findOne({ officerId: digitalId });
+            role = "FIELD_OFFICER";
+        }
+        else if (digitalId.startsWith("DO")) {
+            user = await Officer.findOne({ officerId: digitalId });
+            role = "DISTRICT_OFFICER";
+        }
+        else if (digitalId.startsWith("SO")) {
+            user = await Officer.findOne({ officerId: digitalId });
+            role = "STATE_OFFICER";
+        }
+        else if (digitalId.startsWith("TRN")) {
+            user = await Trainer.findOne({ trainerId: digitalId });
+            role = "TRAINER";
+        }
+        else {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid Digital ID format"
+            });
+        }
+
+        // 3️⃣ Check user existence
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        // 4️⃣ Verify password
         const match = await bcrypt.compare(password, user.passwordHash);
-        if (!match)
-            return res.status(400).json({ success: false, message: "Invalid credentials" });
+        if (!match) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid password"
+            });
+        }
 
-        // Generate JWT
+        // 5️⃣ Create token
         const token = jwt.sign(
-            { id: user._id, role: "BENEFICIARY" },
+            { id: user._id, digitalId, role },
             process.env.JWT_SECRET,
             { expiresIn: "7d" }
         );
 
+        // 6️⃣ Send response
         return res
-            .status(200)
             .cookie("token", token, {
                 httpOnly: true,
-                secure: true,
-                sameSite: "none",
+                secure: process.env.NODE_ENV === "production",
+                sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
                 maxAge: 7 * 24 * 60 * 60 * 1000
             })
             .json({
                 success: true,
                 message: "Login successful",
+                role,
                 user
             });
 
     } catch (err) {
-        return res.status(500).json({ success: false, message: err.message });
+        console.error("LOGIN ERROR:", err);
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
     }
 };
 
 // ==========================
-// LOGOUT
+// LOGOUT BENEFICIARY
 // ==========================
 export const logoutBeneficiary = async (req, res) => {
     try {
         res.clearCookie("token", {
             httpOnly: true,
-            secure: true,
-            sameSite: "none",
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
         });
 
         return res.status(200).json({
@@ -177,6 +258,65 @@ export const logoutBeneficiary = async (req, res) => {
             success: false,
             message: "Logout failed",
             error: err.message
+        });
+    }
+};
+
+export const getMyProfile = async (req, res) => {
+    try {
+        const { digitalId } = req.user; // From authBeneficiary JWT
+
+        const user = await Beneficiary.findOne({ digitalId });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "Beneficiary not found"
+            });
+        }
+
+        // Prepare clean profile response
+        const profile = {
+            digitalId: user.digitalId,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            district: user.district,
+            state: user.state,
+            address: user.address,
+            latitude: user.latitude,
+            longitude: user.longitude,
+            regPhotoUrl: user.regPhotoUrl,
+            isVerified: user.isVerified,
+            createdAt: user.createdAt,
+
+            documents: {
+                aadhaarUrl: user.aadhaarUrl || null,
+                casteCertificateUrl: user.casteCertificateUrl || null,
+                domicileUrl: user.domicileUrl || null,
+                incomeCertificateUrl: user.incomeCertificateUrl || null
+            },
+
+            applications: user.applications.map(app => ({
+                schemeName: app.schemeName,
+                status: app.status,
+                appliedAt: app.appliedAt,
+                applicationRefId: app.applicationRefId
+            })),
+
+            totalApplications: user.applications.length
+        };
+
+        return res.json({
+            success: true,
+            profile
+        });
+
+    } catch (err) {
+        console.error("PROFILE ERROR:", err);
+        return res.status(500).json({
+            success: false,
+            message: err.message
         });
     }
 };
