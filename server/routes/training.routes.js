@@ -1,5 +1,6 @@
 import express from "express";
 import {
+    getCentralApprovedForDistrict,
     assignTrainingToBeneficiary,
     addTrainingSession,
     getTrainerDashboard,
@@ -12,43 +13,47 @@ import { authBeneficiary } from "../middlewares/authBeneficiary.js";
 
 const router = express.Router();
 
-/**
- * CENTRAL OFFICER:
- * Assign training to application
- */
+/* ---------------------------------------------------
+   DISTRICT: FETCH CENTRAL APPROVED APPLICATIONS
+--------------------------------------------------- */
+router.get(
+    "/district/central-approved",
+    authOfficer(["DISTRICT_OFFICER"]),
+    getCentralApprovedForDistrict
+);
+
+/* ---------------------------------------------------
+   DISTRICT: ASSIGN TRAINING
+--------------------------------------------------- */
 router.post(
-    "/assign",
-    authOfficer(["CENTRAL_OFFICER"]),
+    "/district/assign-training",
+    authOfficer(["DISTRICT_OFFICER"]),
     assignTrainingToBeneficiary
 );
 
-/**
- * TRAINER:
- * Add session (trainer fills attendance/remarks)
- */
+/* ---------------------------------------------------
+   TRAINER: ADD TRAINING SESSION
+--------------------------------------------------- */
 router.post(
-    "/session",
+    "/trainer/add-session",
     authTrainer,
     addTrainingSession
 );
 
-/**
- * TRAINER:
- * Dashboard view (assigned beneficiaries + sessions)
- */
+/* ---------------------------------------------------
+   TRAINER: DASHBOARD (assigned apps + sessions)
+--------------------------------------------------- */
 router.get(
-    "/trainer-dashboard",
+    "/trainer/dashboard",
     authTrainer,
     getTrainerDashboard
 );
 
-/**
- * BENEFICIARY:
- * View training details of their application
- */
+/* ---------------------------------------------------
+   BENEFICIARY: VIEW THEIR TRAINING DETAILS
+--------------------------------------------------- */
 router.get(
-    "/details/:applicationRefId",
-    authBeneficiary,
+    "/beneficiary/details/:applicationRefId",
     getBeneficiaryTrainingDetails
 );
 

@@ -5,12 +5,7 @@ import { Bell, Menu, Search, User, LogOut, ChevronDown } from 'lucide-react';
 const Navbar = ({ onMenuClick }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  // Mock User Data
-  const user = {
-    name: "Rajesh Kumar",
-    role: "Beneficiary",
-    avatar: null,
-  };
+  const user = JSON.parse(localStorage.getItem("sujhaa-user"));
 
   return (
     <header className="relative z-30 flex h-16 w-full items-center justify-between border-b border-gray-200 bg-[#00a851] px-4 shadow-sm sm:px-6 lg:px-8">

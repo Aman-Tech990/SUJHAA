@@ -1,24 +1,42 @@
 // -----------------------------------------
-// CENTRAL ADMIN ONLY CONTROLLER
+// CENTRAL ADMIN CONTROLLER (FINAL & FIXED)
 // -----------------------------------------
+
 import PDFDocument from "pdfkit";
 import axios from "axios";
-import { generateBarChart, generatePieChart } from "../utils/chartGenerator.js";
 import Beneficiary from "../models/Beneficiary.js";
+import { generateBarChart, generatePieChart } from "../utils/chartGenerator.js";
 
-/**
- * GET ALL STATE APPROVED APPLICATIONS
- */
+/* ---------------------------------------------------
+   1) FETCH ALL STATE-APPROVED APPLICATIONS (STRICT)
+--------------------------------------------------- */
 export const getStateApprovedApplications = async (req, res) => {
     try {
-        const list = await Beneficiary.find({
-            "applications.status": "STATE_APPROVED"
-        });
+        const results = await Beneficiary.aggregate([
+            { $unwind: "$applications" },
+            {
+                $match: {
+                    "applications.status": "STATE_APPROVED"
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    beneficiaryId: "$_id",
+                    digitalId: "$digitalId",
+                    name: "$name",
+                    phone: "$phone",
+                    district: "$district",
+                    state: "$state",
+                    schemeName: "$applications.schemeName",
+                    schemeCategory: "$applications.schemeCategory",
+                    applicationRefId: "$applications.applicationRefId",
+                    appliedAt: "$applications.appliedAt"
+                }
+            }
+        ]);
 
-        return res.status(200).json({
-            success: true,
-            data: list
-        });
+        return res.status(200).json({ success: true, data: results });
 
     } catch (err) {
         console.error("getStateApprovedApplications:", err);
@@ -29,14 +47,15 @@ export const getStateApprovedApplications = async (req, res) => {
     }
 };
 
-
-
-/**
- * CENTRAL FINAL APPROVAL
- */
+/* ---------------------------------------------------
+   2) CENTRAL FINAL APPROVAL
+--------------------------------------------------- */
 export const centralFinalApprove = async (req, res) => {
     try {
         const { applicationRefId } = req.body;
+
+        if (!applicationRefId)
+            return res.status(400).json({ success: false, message: "applicationRefId is required" });
 
         const beneficiary = await Beneficiary.findOne({
             "applications.applicationRefId": applicationRefId
@@ -45,16 +64,19 @@ export const centralFinalApprove = async (req, res) => {
         if (!beneficiary)
             return res.status(404).json({ success: false, message: "Beneficiary not found" });
 
-        const app = beneficiary.applications.find(a => a.applicationRefId === applicationRefId);
+        const app = beneficiary.applications.find(
+            a => a.applicationRefId === applicationRefId
+        );
 
+        // MUST BE STATE APPROVED ONLY
         if (app.status !== "STATE_APPROVED") {
             return res.status(400).json({
                 success: false,
-                message: "Application not eligible for central approval"
+                message: `Cannot central approve. Current status: ${app.status}`
             });
         }
 
-        // Update status
+        // Update status to CENTRAL_APPROVED
         app.status = "CENTRAL_APPROVED";
 
         app.statusHistory.push({
@@ -64,7 +86,7 @@ export const centralFinalApprove = async (req, res) => {
             changedById: req.user.officerId
         });
 
-        // Auto create fund installments template
+        // Create fund installment template
         app.funds = [
             {
                 installmentNumber: 1,
@@ -108,14 +130,15 @@ export const centralFinalApprove = async (req, res) => {
     }
 };
 
-
-
-/**
- * CENTRAL FINAL REJECTION
- */
+/* ---------------------------------------------------
+   3) CENTRAL FINAL REJECTION
+--------------------------------------------------- */
 export const centralFinalReject = async (req, res) => {
     try {
         const { applicationRefId, reason } = req.body;
+
+        if (!applicationRefId)
+            return res.status(400).json({ success: false, message: "applicationRefId required" });
 
         const beneficiary = await Beneficiary.findOne({
             "applications.applicationRefId": applicationRefId
@@ -126,15 +149,22 @@ export const centralFinalReject = async (req, res) => {
 
         const app = beneficiary.applications.find(a => a.applicationRefId === applicationRefId);
 
-        // Update status
+        // Only STATE_APPROVED apps can be rejected
+        if (app.status !== "STATE_APPROVED") {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot central reject. Current status: ${app.status}`
+            });
+        }
+
         app.status = "CENTRAL_REJECTED";
 
         app.statusHistory.push({
             status: "CENTRAL_REJECTED",
+            reason,
             changedAt: new Date(),
             changedByRole: "CENTRAL_ADMIN",
-            changedById: req.user.officerId,
-            reason
+            changedById: req.user.officerId
         });
 
         await beneficiary.save();
@@ -153,14 +183,15 @@ export const centralFinalReject = async (req, res) => {
     }
 };
 
-
-
-/**
- * RELEASE FUND INSTALLMENT
- */
+/* ---------------------------------------------------
+   4) RELEASE INSTALLMENT (STRICT PIPELINE)
+--------------------------------------------------- */
 export const releaseInstallment = async (req, res) => {
     try {
         const { applicationRefId, installmentNumber, utrNumber } = req.body;
+
+        if (!applicationRefId || !installmentNumber)
+            return res.status(400).json({ success: false, message: "Required fields missing" });
 
         const beneficiary = await Beneficiary.findOne({
             "applications.applicationRefId": applicationRefId
@@ -171,18 +202,24 @@ export const releaseInstallment = async (req, res) => {
 
         const app = beneficiary.applications.find(a => a.applicationRefId === applicationRefId);
 
-        const installment = app.funds.find(f => f.installmentNumber === installmentNumber);
-
-        if (!installment) {
-            return res.status(404).json({
+        /* VALIDATION:
+           - Cannot release until CENTRAL_APPROVED
+        */
+        if (!["CENTRAL_APPROVED", "TRAINING_ASSIGNED", "TRAINING_COMPLETED"].includes(app.status)) {
+            return res.status(400).json({
                 success: false,
-                message: "Installment not found"
+                message: `Cannot release funds in status: ${app.status}`
             });
         }
 
+        const installment = app.funds.find(f => f.installmentNumber === installmentNumber);
+
+        if (!installment)
+            return res.status(404).json({ success: false, message: "Installment not found" });
+
         installment.status = "RELEASED";
         installment.releasedAt = new Date();
-        installment.utrNumber = utrNumber;
+        installment.utrNumber = utrNumber || null;
 
         await beneficiary.save();
 
@@ -200,12 +237,15 @@ export const releaseInstallment = async (req, res) => {
     }
 };
 
-/**
- * MARK ENTERPRISE KIT DISTRIBUTED
- */
+/* ---------------------------------------------------
+   5) ENTERPRISE KIT DISTRIBUTION
+--------------------------------------------------- */
 export const markEnterpriseKitDistributed = async (req, res) => {
     try {
         const { applicationRefId, kitDetails } = req.body;
+
+        if (!applicationRefId)
+            return res.status(400).json({ success: false, message: "applicationRefId required" });
 
         const beneficiary = await Beneficiary.findOne({
             "applications.applicationRefId": applicationRefId
@@ -216,15 +256,22 @@ export const markEnterpriseKitDistributed = async (req, res) => {
 
         const app = beneficiary.applications.find(a => a.applicationRefId === applicationRefId);
 
+        // Must have completed training
+        if (app.trainingStatus !== "COMPLETED") {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot distribute kit before training completion"
+            });
+        }
+
         app.enterpriseKit = {
             distributed: true,
             kitDetails,
             distributedAt: new Date()
         };
 
-        // Release final installment
+        // auto-release final installment
         const finalInstallment = app.funds.find(f => f.installmentNumber === 4);
-
         if (finalInstallment) {
             finalInstallment.status = "RELEASED";
             finalInstallment.releasedAt = new Date();
@@ -234,19 +281,17 @@ export const markEnterpriseKitDistributed = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: "Enterprise kit distribution marked"
+            message: "Enterprise kit distribution completed"
         });
 
     } catch (err) {
         console.error("markEnterpriseKitDistributed:", err);
         return res.status(500).json({
             success: false,
-            message: "Failed to update kit distribution"
+            message: "Failed to distribute kit"
         });
     }
 };
-
-
 
 /**
  * CENTRAL MIS DASHBOARD REPORT

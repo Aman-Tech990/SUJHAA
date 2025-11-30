@@ -1,6 +1,6 @@
-// routes/district.routes.js
 import express from "express";
 import { authOfficer } from "../middlewares/authOfficer.js";
+
 import {
     getDistrictApplications,
     getApplicationDetails,
@@ -9,9 +9,16 @@ import {
     downloadApprovedPDF,
 } from "../controllers/district.controller.js";
 
+import {
+    getCentralApprovedForDistrict,
+    assignTrainingToBeneficiary
+} from "../controllers/trainingController.js";
+
 const router = express.Router();
 
-// All only for DISTRICT_OFFICER
+/* -------------------------------------------
+   DISTRICT APPROVAL WORKFLOW (UNDER_VERIFICATION)
+------------------------------------------- */
 router.get(
     "/applications",
     authOfficer(["DISTRICT_OFFICER"]),
@@ -40,6 +47,21 @@ router.get(
     "/approved/pdf",
     authOfficer(["DISTRICT_OFFICER"]),
     downloadApprovedPDF
+);
+
+/* -------------------------------------------
+   NEW TRAINING WORKFLOW (CENTRAL_APPROVED → TRAINING_ASSIGNED)
+------------------------------------------- */
+router.get(
+    "/training/central-approved",
+    authOfficer(["DISTRICT_OFFICER"]),
+    getCentralApprovedForDistrict
+);
+
+router.post(
+    "/training/assign",
+    authOfficer(["DISTRICT_OFFICER"]),
+    assignTrainingToBeneficiary
 );
 
 export default router;

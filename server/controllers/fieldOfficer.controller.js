@@ -5,6 +5,8 @@ import FieldVerification from "../models/Officer.js";
 import { uploadBufferToCloudinary } from "../services/cloudinary.service.js";
 import { calculateDistance } from "../utils/calculateDistance.js";
 
+import { compareFaces } from "../utils/faceMatch.js";
+
 /* ============================================================
    1. GET ALL APPLICATIONS OF OFFICER'S DISTRICT
    Route: GET /field-officer/applications
@@ -12,14 +14,10 @@ import { calculateDistance } from "../utils/calculateDistance.js";
 export const getApplicationsForDistrict = async (req, res) => {
     try {
         const officer = req.user;
-        const officerDistrict = officer.district;
-
-        // beneficiaries in officer district
-        const beneficiaries = await Beneficiary.find({ district: officerDistrict });
+        const beneficiaries = await Beneficiary.find({ district: officer.district });
 
         const beneficiaryIds = beneficiaries.map(b => b._id);
 
-        // applications pending field verification
         const applications = await Application.find({
             beneficiary_id: { $in: beneficiaryIds },
             status: "PENDING_FIELD_VERIFICATION"
@@ -35,13 +33,9 @@ export const getApplicationsForDistrict = async (req, res) => {
 
     } catch (err) {
         console.error("FIELD OFFICER LIST ERROR:", err);
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        });
+        return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 
 /* ============================================================
    2. GET SINGLE APPLICATION DETAILS
@@ -56,30 +50,19 @@ export const getSingleApplication = async (req, res) => {
                 "name email phone address district state latitude longitude regPhotoUrl aadhaarUrl casteCertificateUrl incomeCertificateUrl domicileUrl"
             );
 
-        if (!application) {
-            return res.status(404).json({
-                success: false,
-                message: "Application not found"
-            });
-        }
+        if (!application)
+            return res.status(404).json({ success: false, message: "Application not found" });
 
-        return res.json({
-            success: true,
-            application
-        });
+        return res.json({ success: true, application });
 
     } catch (err) {
         console.error("SINGLE APPLICATION ERROR:", err);
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        });
+        return res.status(500).json({ success: false, message: err.message });
     }
 };
 
-
 /* ============================================================
-   3. FIELD VERIFICATION PROCESS (GPS + Photos)
+   FIELD VERIFICATION (GPS + Photo + Face Match)
    Route: POST /field-officer/verify
    ============================================================ */
 export const verifyBeneficiary = async (req, res) => {
@@ -87,7 +70,6 @@ export const verifyBeneficiary = async (req, res) => {
         const { application_id, latitude, longitude } = req.body;
         const officer = req.user;
 
-        // files (from RN)
         const beneficiaryPhoto = req.files["beneficiaryPhoto"]?.[0];
         const housePhoto = req.files["housePhoto"]?.[0];
 
@@ -99,7 +81,7 @@ export const verifyBeneficiary = async (req, res) => {
         }
 
         // Upload to Cloudinary
-        const beneficiaryPhotoUrl = await uploadBufferToCloudinary(
+        const livePhotoUrl = await uploadBufferToCloudinary(
             beneficiaryPhoto.buffer,
             "sujhaa/field_verification"
         );
@@ -109,20 +91,17 @@ export const verifyBeneficiary = async (req, res) => {
             "sujhaa/field_verification"
         );
 
-        // find application
+        // Find application
         const application = await Application.findOne({ application_id });
+        if (!application)
+            return res.status(404).json({ success: false, message: "Application not found" });
 
-        if (!application) {
-            return res.status(404).json({
-                success: false,
-                message: "Application not found"
-            });
-        }
-
-        // fetch beneficiary location
+        // Fetch beneficiary
         const beneficiary = await Beneficiary.findById(application.beneficiary_id);
 
-        // calculate GPS distance
+        // ------------------------------------
+        // 1. GPS DISTANCE CHECK
+        // ------------------------------------
         const distance = calculateDistance(
             beneficiary.latitude,
             beneficiary.longitude,
@@ -130,51 +109,75 @@ export const verifyBeneficiary = async (req, res) => {
             longitude
         );
 
-        const withinRange = distance <= 5; // 5 km accuracy
+        const gpsMatch = distance <= 10; // 10 KM radius allowed
 
-        // create verification record
+        // ------------------------------------
+        // 2. FACE MATCH (Face++)
+        // ------------------------------------
+        const { match: faceMatch, score } = await compareFaces(
+            beneficiary.regPhotoUrl,      // registered photo URL
+            beneficiaryPhoto.buffer       // officer clicked photo buffer
+        );
+
+        // FINAL DECISION
+        const finalMatch = gpsMatch && faceMatch;
+
+        // Record verification
         const verificationRecord = await FieldVerification.create({
             application_id,
             officer_id: officer._id,
             officer_role: officer.role,
-            beneficiary_photo_url: beneficiaryPhotoUrl,
+
+            beneficiary_photo_url: livePhotoUrl,
             house_photo_url: housePhotoUrl,
+
+            face_match_score: score,
+            face_matched: faceMatch,
+
             officer_latitude: latitude,
             officer_longitude: longitude,
             distance_km: distance,
-            verified: withinRange,
+            gps_matched: gpsMatch,
+
+            verified: finalMatch,
             timestamp: new Date()
         });
 
-        // update application
+        // Update application status
         application.field_verification_id = verificationRecord._id;
-        application.status = withinRange
-            ? "UNDER_VERIFICATION"
-            : "REJECTED";
 
-        if (!withinRange) {
-            application.rejection_reason = "LOCATION MISMATCH";
-            application.rejected_by = officer.role;
+        if (finalMatch) {
+            application.status = "UNDER_VERIFICATION";
+        } else {
+            application.status = "REJECTED";
+            application.rejection_reason =
+                !gpsMatch && !faceMatch
+                    ? "GPS + Face mismatch"
+                    : !gpsMatch
+                        ? "GPS mismatch"
+                        : "Face mismatch";
+
             application.rejected_at = new Date();
+            application.rejected_by = officer.role;
         }
 
         await application.save();
 
         return res.json({
             success: true,
-            message: withinRange
-                ? "Verification Successful"
-                : "Location mismatch detected",
-            distanceInKM: distance,
-            match: withinRange,
-            verification_id: verificationRecord._id
+            message: finalMatch
+                ? "Verification SUCCESS"
+                : "Verification FAILED",
+            faceMatch,
+            gpsMatch,
+            finalMatch,
+            score,
+            distance,
+            verificationId: verificationRecord._id
         });
 
     } catch (err) {
         console.error("FIELD VERIFICATION ERROR:", err);
-        return res.status(500).json({
-            success: false,
-            message: err.message
-        });
+        return res.status(500).json({ success: false, message: err.message });
     }
 };
