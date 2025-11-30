@@ -32,7 +32,7 @@ const beneficiarySchema = new mongoose.Schema({
     // Applications
     applications: [
         {
-            applicationRefId: { type: String, unique: true },
+            applicationRefId: { type: String },
 
             schemeName: String,
             schemeCategory: {

@@ -71,7 +71,7 @@ const Register = () => {
 
     try {
       const res = await axios.post(
-        "https://sujhaa-backend.vercel.app/api/auth/register",
+        "https://sujhaa-backend.onrender.com/api/auth/register",
         fd,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
