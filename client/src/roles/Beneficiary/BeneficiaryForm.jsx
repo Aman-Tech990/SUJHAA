@@ -1,7 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { UploadCloud, FileText, CheckCircle, User, MapPin, Phone, AlertCircle } from 'lucide-react';
+import { useLocation } from "react-router-dom";
+import axios from "axios";
+import { toast } from 'sonner';
 
 const BeneficiaryForm = () => {
+
+  const user = JSON.parse(localStorage.getItem("sujhaa-user"));
+
+  const location = useLocation();
+  const selectedSchemeId = location.state?.schemeId;
+
+  if (!selectedSchemeId) {
+    return (
+      <div className="p-6 text-red-600">
+        Invalid scheme selection. Please go back and choose a scheme again.
+      </div>
+    );
+  }
+
   // 1. State for Personal Details (Simulating data fetched from Profile/Dashboard)
   const [personalDetails, setPersonalDetails] = useState({
     fullName: "",
@@ -53,16 +70,41 @@ const BeneficiaryForm = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitting Data:", { ...personalDetails, ...documents });
-    alert("Application Submitted Successfully!");
+
+    if (!documents.domicile || !documents.income || !documents.caste) {
+      alert("Please upload all required documents");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("domicile", documents.domicile);
+    formData.append("income", documents.income);
+    formData.append("caste", documents.caste);
+
+    try {
+      const res = await axios.post(
+        `http://localhost:5000/api/application/apply/${selectedSchemeId}`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true, 
+        }
+      );
+
+      toast.success("Application Submitted! Ref: " + res.data.applicationRefId);
+
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Submission failed");
+    }
   };
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
       <div className="w-full max-w-4xl bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
-        
+
         {/* Header */}
         <div className="bg-blue-600 p-6 text-white">
           <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -75,14 +117,14 @@ const BeneficiaryForm = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-8">
-          
+
           {/* Section 1: Personal Details */}
           <section>
             <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
               1. Beneficiary Details
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
+
               {/* Name Field */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
@@ -91,7 +133,7 @@ const BeneficiaryForm = () => {
                 <input
                   type="text"
                   name="fullName"
-                  value={personalDetails.fullName}
+                  value={user.name}
                   onChange={handleInputChange}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                 />
@@ -105,7 +147,7 @@ const BeneficiaryForm = () => {
                 <input
                   type="text"
                   name="phone"
-                  value={personalDetails.phone}
+                  value={user.phone}
                   onChange={handleInputChange}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                 />
@@ -118,7 +160,7 @@ const BeneficiaryForm = () => {
                 </label>
                 <textarea
                   name="address"
-                  value={personalDetails.address}
+                  value={user.address}
                   onChange={handleInputChange}
                   rows="3"
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-none"
@@ -138,29 +180,29 @@ const BeneficiaryForm = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Helper to render upload boxes */}
-              <UploadBox 
-                label="Domicile Certificate" 
-                file={documents.domicile} 
-                onChange={(e) => handleFileChange(e, 'domicile')} 
+              <UploadBox
+                label="Domicile Certificate"
+                file={documents.domicile}
+                onChange={(e) => handleFileChange(e, 'domicile')}
               />
-              <UploadBox 
-                label="Income Certificate" 
-                file={documents.income} 
-                onChange={(e) => handleFileChange(e, 'income')} 
+              <UploadBox
+                label="Income Certificate"
+                file={documents.income}
+                onChange={(e) => handleFileChange(e, 'income')}
               />
-              <UploadBox 
-                label="Caste Certificate" 
-                file={documents.caste} 
-                onChange={(e) => handleFileChange(e, 'caste')} 
+              <UploadBox
+                label="Caste Certificate"
+                file={documents.caste}
+                onChange={(e) => handleFileChange(e, 'caste')}
               />
             </div>
           </section>
 
           {/* Footer Actions */}
           <div className="pt-4 flex justify-end">
-            <button 
-              type="submit" 
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5 active:translate-y-0"
+            <button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
             >
               Submit Application
             </button>
@@ -178,13 +220,13 @@ const UploadBox = ({ label, file, onChange }) => {
     <div className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center text-center transition-all cursor-pointer group
       ${file ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'}`}
     >
-      <input 
-        type="file" 
-        accept="image/*" 
-        onChange={onChange} 
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+      <input
+        type="file"
+        accept="image/*"
+        onChange={onChange}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
       />
-      
+
       <div className="z-10 flex flex-col items-center pointer-events-none">
         {file ? (
           <>

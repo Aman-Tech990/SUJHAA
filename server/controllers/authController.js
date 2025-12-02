@@ -225,6 +225,7 @@ export const universalLogin = async (req, res) => {
                 success: true,
                 message: "Login successful",
                 role,
+                token,      // FOR MOBILE
                 user
             });
 

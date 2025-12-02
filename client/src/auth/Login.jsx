@@ -14,7 +14,13 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("https://sujhaa-backend.vercel.app/api/auth/login", formData);
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/login",
+        formData,
+        {
+          withCredentials: true,
+        }
+      );
       if (res.data.success) {
         toast.success(res.data?.message);
         console.log(res.data);

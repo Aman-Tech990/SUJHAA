@@ -22,7 +22,7 @@ console.log("SMTP CONFIG ->", {
 
 export async function sendOtpEmail({ to, name, digitalId, otp }) {
     const mailOptions = {
-        from: `"SUJHAA Support" <${process.env.SMTP_USER}>`,
+        from: `"SUJHAA Support" <${process.env.SMTP_SENDER}>`,
         to,
         subject: "Your SUJHAA Registration OTP & Digital ID",
         html: `

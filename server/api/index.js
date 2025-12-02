@@ -25,7 +25,17 @@ const app = express();
 connectDB();
 
 // Middlewares
-app.use(cors({ origin: "*" }));
+app.use(
+    cors({
+        origin: function (origin, callback) {
+            // Allow requests with no origin (like mobile apps, Expo, Postman)
+            if (!origin) return callback(null, true);
+
+            return callback(null, true); // allow all origins dynamically
+        },
+        credentials: true,
+    })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

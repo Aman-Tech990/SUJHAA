@@ -1,129 +1,173 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const applicationSchema = new mongoose.Schema({
-    // Application ID
-    application_id: {
-        type: String,
-        unique: true,
-        required: true
-    },
-
-    // References
-    beneficiary_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Beneficiary',
-        required: true
-    },
-
-    scheme_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Scheme',
-        required: true
-    },
-
-    skill_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Skill'
-    },
-
-    // Application Status
-    status: {
-        type: String,
-        default: 'PENDING_FIELD_VERIFICATION'
-    },
-
-    // Uploaded Documents (Cloudinary URLs)
-    uploaded_docs: {
-        income_certificate: {
+const applicationSchema = new mongoose.Schema(
+    {
+        /* ---------------------------------------------------------
+           BASIC IDENTIFIERS
+        --------------------------------------------------------- */
+        application_id: {
             type: String,
-            required: true
+            unique: true,
+            required: true,
         },
-        domicile_certificate: {
+
+        beneficiary_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Beneficiary",
+            required: true,
+        },
+
+        scheme_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Scheme",
+            required: true,
+        },
+
+        /* ---------------------------------------------------------
+           APPLICATION STATUS
+        --------------------------------------------------------- */
+
+        // FULL STATUS FLOW:
+        // SUBMITTED → UNDER_VERIFICATION → DISTRICT_APPROVED → STATE_APPROVED → CENTRAL_APPROVED
+        // → TRAINING_ASSIGNED → TRAINING_COMPLETED → FUNDS_RELEASED → KIT_DISTRIBUTED
+        status: {
             type: String,
-            required: true
+            enum: [
+                "SUBMITTED",
+                "UNDER_VERIFICATION",
+                "DISTRICT_APPROVED",
+                "DISTRICT_REJECTED",
+                "STATE_APPROVED",
+                "STATE_REJECTED",
+                "CENTRAL_APPROVED",
+                "CENTRAL_REJECTED",
+                "TRAINING_ASSIGNED",
+                "TRAINING_COMPLETED",
+                "FUNDS_RELEASED",
+                "KIT_DISTRIBUTED",
+            ],
+            default: "UNDER_VERIFICATION",
         },
-        caste_certificate: {
-            type: String,
-            required: true
+
+        /* ---------------------------------------------------------
+           DOCUMENTS (Uploaded at time of application)
+        --------------------------------------------------------- */
+        uploaded_docs: {
+            income_certificate: { type: String, required: true },
+            domicile_certificate: { type: String, required: true },
+            caste_certificate: { type: String, required: true },
         },
-    },
 
-    // Field Verification Reference
-    field_verification_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'FieldVerification'
-    },
+        /* ---------------------------------------------------------
+           FIELD VERIFICATION
+        --------------------------------------------------------- */
+        field_verification_id: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "FieldVerification",
+        },
 
-    // District Level
-    district_remarks: {
-        type: String
-    },
+        /* FIELD VERIFIED FLAGS */
+        field_verified: { type: Boolean, default: false },
+        field_verified_at: { type: Date },
 
-    district_approved_by: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'DistrictOfficer'
-    },
+        /* ---------------------------------------------------------
+           DISTRICT LEVEL
+        --------------------------------------------------------- */
+        district_approved_by: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "DistrictOfficer",
+        },
+        district_approved_at: { type: Date },
+        district_remarks: { type: String },
 
-    district_approved_at: {
-        type: Date
-    },
+        /* ---------------------------------------------------------
+           STATE LEVEL
+        --------------------------------------------------------- */
+        state_approved_by: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "StateOfficer",
+        },
+        state_approved_at: { type: Date },
+        state_remarks: { type: String },
 
-    // State Level
-    state_remarks: {
-        type: String
-    },
+        /* ---------------------------------------------------------
+           CENTRAL LEVEL
+        --------------------------------------------------------- */
+        central_approved_by: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "CentralAdmin",
+        },
+        central_approved_at: { type: Date },
+        central_remarks: { type: String },
 
-    state_approved_by: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'StateOfficer'
-    },
+        /* ---------------------------------------------------------
+           TRAINING WORKFLOW (PM-AJAY Requirement)
+        --------------------------------------------------------- */
+        training: {
+            center: String,
+            skill: String,
+            startDate: Date,
+            endDate: Date,
+            progress: { type: Number, default: 0 }, // percent
+            status: {
+                type: String,
+                enum: ["NOT_ASSIGNED", "ONGOING", "COMPLETED"],
+                default: "NOT_ASSIGNED",
+            },
+        },
 
-    state_approved_at: {
-        type: Date
-    },
+        /* ---------------------------------------------------------
+           FUND RELEASE (DBT)
+        --------------------------------------------------------- */
+        funds: [
+            {
+                amount: Number,
+                releasedAt: Date,
+                status: {
+                    type: String,
+                    enum: ["PENDING", "RELEASED"],
+                    default: "PENDING",
+                },
+            },
+        ],
 
-    // Central Level
-    central_remarks: {
-        type: String
-    },
+        /* ---------------------------------------------------------
+           ENTERPRISE KIT DISTRIBUTION
+        --------------------------------------------------------- */
+        enterpriseKit: {
+            distributed: { type: Boolean, default: false },
+            distributedAt: Date,
+        },
 
-    central_approved_by: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'CentralAdmin'
-    },
+        /* ---------------------------------------------------------
+           STATUS HISTORY (TIMELINE)
+        --------------------------------------------------------- */
+        statusHistory: [
+            {
+                status: String,
+                changedAt: { type: Date, default: Date.now },
+                changedByRole: String,
+                changedById: mongoose.Schema.Types.ObjectId,
+            },
+        ],
 
-    central_approved_at: {
-        type: Date
-    },
+        /* ---------------------------------------------------------
+           OTHER FIELDS
+        --------------------------------------------------------- */
+        rejection_reason: String,
+        rejected_by: String, // officer role
+        rejected_at: Date,
 
-    // Rejection
-    rejection_reason: {
-        type: String
-    },
+        applied_date: {
+            type: Date,
+            default: Date.now,
+        },
 
-    rejected_by: {
-        type: String // Can be FieldOfficer, DistrictOfficer, StateOfficer, CentralAdmin
+        is_active: { type: Boolean, default: true },
     },
-
-    rejected_at: {
-        type: Date
-    },
-
-    // Dates
-    applied_date: {
-        type: Date,
-        default: Date.now
-    },
-
-    is_active: {
-        type: Boolean,
-        default: true
+    {
+        timestamps: true,
     }
+);
 
-}, {
-    timestamps: true
-});
-
-const Application = mongoose.model('Application', applicationSchema);
-
-export default Application;
+export default mongoose.model("Application", applicationSchema);

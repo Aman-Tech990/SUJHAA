@@ -11,6 +11,7 @@ import MySchemes from './roles/Beneficiary/MySchemes';
 import BeneficiaryFundDetails from './roles/Beneficiary/BeneficiaryFundDetails';
 import BeneficiaryHelp from './roles/Beneficiary/BeneficiaryHelp';
 import BeneficiaryTrainingTracker from './roles/Beneficiary/BeneficiaryTrainingTracker';
+import BeneficiaryProfile from './roles/Beneficiary/BeneficiaryProfile';
 
 // District Officer
 import DistrictLayout from './roles/District/DistrictLayout';
@@ -19,6 +20,14 @@ import MISReport from './roles/District/MISReport';
 import DistrictBeneficiaryForm from './roles/District/DistrictBenificiaryForm';
 import DistrictFeedbackAnalysis from './roles/District/DistrictFeedbackAnalysis';
 import TestVerify from './TestVerify';
+
+// State Officer
+import StateLayout from './roles/State/StateLayout';
+import StateDashboard from './roles/State/StateDashboard';
+import StateBeneficiary from './roles/State/StateBeneficiary';
+import StateFundReport from './roles/State/StateFundReport';
+import StateMISReport from './roles/State/StateMISReport';
+import StateTrainingReports from './roles/State/StateTrainingReport';
 
 // Auth
 import Register from './auth/Register';
@@ -61,6 +70,7 @@ const App = () => {
         { path: "fundDetails", element: <BeneficiaryFundDetails /> },
         { path: "support", element: <BeneficiaryHelp /> },
         { path: "trainingtracker", element: <BeneficiaryTrainingTracker /> },
+        { path: "profile", element: <BeneficiaryProfile /> },
       ],
     },
 
@@ -78,6 +88,36 @@ const App = () => {
         { path: "misreport", element: <MISReport /> },
         { path: "feedbackAnalysis", element: <DistrictFeedbackAnalysis /> },
         { path: "application/:id", element: <DistrictBeneficiaryForm /> },
+      ]
+    },
+    {
+      path: '/stateOfficer',
+      element: <StateLayout />,
+      children: [
+        {
+          path: "dashboard",
+          element: <StateDashboard />
+        },
+        {
+          index: true,
+          element: <Navigate to="dashboard" replace />
+        },
+        {
+          path: "MISreport",
+          element: <StateMISReport />
+        },
+        {
+          path: "fundreport",
+          element: <StateFundReport />
+        },
+        {
+          path: "beneficiaryreport",
+          element: <StateBeneficiary />
+        },
+        {
+          path: "trainingreport",
+          element: <StateTrainingReports />
+        },
       ]
     }
   ]);

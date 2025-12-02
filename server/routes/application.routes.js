@@ -1,6 +1,6 @@
 import express from "express";
 import { authBeneficiary } from "../middlewares/authBeneficiary.js";
-
+import upload from "../middlewares/multer.js";
 import {
     applyForScheme,
     getMyApplications
@@ -8,14 +8,18 @@ import {
 
 const router = express.Router();
 
-// APPLY FOR A SCHEME (schemeId = MongoDB _id)
+
 router.post(
     "/apply/:schemeId",
     authBeneficiary,
+    upload.fields([
+        { name: "domicile", maxCount: 1 },
+        { name: "income", maxCount: 1 },
+        { name: "caste", maxCount: 1 }
+    ]),
     applyForScheme
 );
 
-// GET ALL APPLICATIONS OF LOGGED-IN BENEFICIARY
 router.get(
     "/my-applications",
     authBeneficiary,

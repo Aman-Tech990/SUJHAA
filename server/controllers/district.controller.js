@@ -1,3 +1,4 @@
+import Application from "../models/Application.js";
 import Beneficiary from "../models/Beneficiary.js";
 import PDFDocument from "pdfkit";
 import axios from "axios";
@@ -28,34 +29,50 @@ export const getDistrictApplications = async (req, res) => {
     try {
         const district = req.user.district;
 
-        const beneficiaries = await Beneficiary.find({
-            district,
-            "applications.status": "UNDER_VERIFICATION",
-            "applications.fieldOfficerVerification.verified": true
+        // FETCH ALL UNDER_VERIFICATION WITH SCHEME POPULATED
+        const apps = await Application.find({
+            status: "UNDER_VERIFICATION",
+            field_verified: true
+        })
+            .populate("scheme_id")    // POPULATE SCHEME
+            .populate("beneficiary_id"); // OPTIONAL
+
+        if (!apps.length) {
+            return res.json({ success: true, applications: [] });
+        }
+
+        const enriched = [];
+
+        for (const app of apps) {
+            const beneficiary = await Beneficiary.findById(app.beneficiary_id);
+            if (!beneficiary) continue;
+
+            // Filter by district
+            if (beneficiary.district !== district) continue;
+
+            enriched.push({
+                applicationRefId: app.application_id,
+                beneficiaryName: beneficiary.name,
+                digitalId: beneficiary.digitalId,
+                phone: beneficiary.phone,
+
+                // ⭐ POPULATED SCHEME DETAILS
+                schemeId: app.scheme_id._id,
+                schemeName: app.scheme_id.scheme_name,
+                schemeCategory: app.scheme_id.category,
+                schemeDescription: app.scheme_id.description,
+
+                status: app.status,
+                fieldVerified: app.field_verified,
+                appliedAt: app.applied_date
+            });
+        }
+
+        return res.json({
+            success: true,
+            applications: enriched
         });
 
-        const applications = beneficiaries.flatMap((b) =>
-            b.applications
-                .filter(
-                    (a) =>
-                        a.status === "UNDER_VERIFICATION" &&
-                        a.fieldOfficerVerification?.verified
-                )
-                .map((app) => ({
-                    digitalId: b.digitalId,
-                    beneficiaryName: b.name,
-                    phone: b.phone,
-                    district: b.district,
-                    state: b.state,
-                    schemeName: app.schemeName,
-                    schemeCategory: app.schemeCategory,
-                    applicationRefId: app.applicationRefId,
-                    aiScore: generateAIScore(b, app),
-                    appliedAt: app.appliedAt
-                }))
-        );
-
-        return res.json({ success: true, applications });
     } catch (err) {
         console.error("DISTRICT_GET_APPLICATIONS:", err);
         return res.status(500).json({
@@ -65,6 +82,7 @@ export const getDistrictApplications = async (req, res) => {
     }
 };
 
+
 /* =====================================================
    DISTRICT — APPLICATION DETAILS
 ===================================================== */
@@ -72,45 +90,78 @@ export const getApplicationDetails = async (req, res) => {
     try {
         const { refId } = req.params;
 
-        const beneficiary = await Beneficiary.findOne({
-            "applications.applicationRefId": refId
-        });
+        // 1️⃣ Find application by application_id
+        const application = await Application.findOne({
+            application_id: refId
+        }).populate("scheme_id");
 
-        if (!beneficiary)
+        if (!application) {
             return res.status(404).json({
                 success: false,
                 message: "Application not found"
             });
+        }
 
-        // Cross district protection
-        if (beneficiary.district !== req.user.district)
+        // 2️⃣ Get beneficiary
+        const beneficiary = await Beneficiary.findById(application.beneficiary_id);
+        if (!beneficiary) {
+            return res.status(404).json({
+                success: false,
+                message: "Beneficiary not found"
+            });
+        }
+
+        // 3️⃣ District protection
+        if (beneficiary.district !== req.user.district) {
             return res.status(403).json({
                 success: false,
-                message: "Cannot view applications of another district"
+                message: "Unauthorized district access"
             });
+        }
 
-        const app = beneficiary.applications.find(
-            (a) => a.applicationRefId === refId
-        );
+        // 4️⃣ Convert uploaded_docs (object → array)
+        const uploadedDocsObject = application.uploaded_docs || {};
 
-        const aiScore = generateAIScore(beneficiary, app);
+        const uploadedDocsArray = Object.keys(uploadedDocsObject).map(key => ({
+            name:
+                key === "incomeCertificate"
+                    ? "Income Certificate"
+                    : key === "casteCertificate"
+                        ? "Caste Certificate"
+                        : key === "domicileCertificate"
+                            ? "Domicile Certificate"
+                            : key === "aadhaar"
+                                ? "Aadhaar Card"
+                                : key, // fallback
+            url: uploadedDocsObject[key]
+        }));
 
+        // 5️⃣ Final formatted response
         return res.json({
             success: true,
             beneficiary: {
-                digitalId: beneficiary.digitalId,
                 name: beneficiary.name,
+                digitalId: beneficiary.digitalId,
                 phone: beneficiary.phone,
                 email: beneficiary.email,
+                aadhaarNumber: beneficiary.aadhaarNumber,
+                category: beneficiary.category,
                 address: beneficiary.address,
                 district: beneficiary.district,
-                state: beneficiary.state
+                state: beneficiary.state,
             },
             application: {
-                ...app.toObject(),
-                aiScore
+                applicationId: application.application_id,
+                schemeName: application.scheme_id?.scheme_name,
+                schemeCategory: application.scheme_id?.category,
+                schemeDescription: application.scheme_id?.description,
+                status: application.status,
+                fieldOfficerVerification: application.field_verified,
+                documents: uploadedDocsArray,
+                appliedAt: application.applied_date,
             }
         });
+
     } catch (err) {
         console.error("DISTRICT_APP_DETAILS:", err);
         return res.status(500).json({
@@ -120,59 +171,65 @@ export const getApplicationDetails = async (req, res) => {
     }
 };
 
+
 /* =====================================================
    DISTRICT — APPROVE (moves to STATE level)
 ===================================================== */
 export const approveApplication = async (req, res) => {
     try {
         const { refId } = req.params;
-        const { comments } = req.body;
 
-        const beneficiary = await Beneficiary.findOne({
-            "applications.applicationRefId": refId
-        });
+        // 1️⃣ Find Application by application_id
+        const application = await Application.findOne({ application_id: refId });
 
-        if (!beneficiary)
+        if (!application)
             return res.status(404).json({
                 success: false,
                 message: "Application not found"
             });
 
+        // 2️⃣ Find beneficiary
+        const beneficiary = await Beneficiary.findById(application.beneficiary_id);
+
+        if (!beneficiary)
+            return res.status(404).json({
+                success: false,
+                message: "Beneficiary not found"
+            });
+
+        // 3️⃣ Validate district
         if (beneficiary.district !== req.user.district)
             return res.status(403).json({
                 success: false,
                 message: "District mismatch — cannot approve"
             });
 
-        const app = beneficiary.applications.find(
-            (a) => a.applicationRefId === refId
-        );
-
-        if (app.status !== "UNDER_VERIFICATION")
+        // 4️⃣ Check valid state
+        if (application.status !== "UNDER_VERIFICATION")
             return res.status(400).json({
                 success: false,
-                message: `Cannot approve application in status: ${app.status}`
+                message: `Cannot approve application in status: ${application.status}`
             });
 
-        // Proper flow — district approval moves to STATE APPROVAL
-        app.status = "DISTRICT_APPROVED";
+        // 5️⃣ Update
+        application.status = "DISTRICT_APPROVED";
+        application.districtOfficerId = req.user.officerId;
+        application.districtOfficerComments = req.body.comments || "Approved";
 
-        app.districtOfficerId = req.user.officerId;
-        app.districtOfficerComments = comments || "Approved by District Officer";
-
-        app.statusHistory.push({
+        application.statusHistory.push({
             status: "DISTRICT_APPROVED",
             changedAt: new Date(),
             changedByRole: "DISTRICT_OFFICER",
-            changedById: req.user.officerId
+            changedById: req.user._id
         });
 
-        await beneficiary.save();
+        await application.save();
 
         return res.json({
             success: true,
             message: "Application forwarded to STATE level"
         });
+
     } catch (err) {
         console.error("DISTRICT_APPROVE:", err);
         return res.status(500).json({
@@ -182,22 +239,28 @@ export const approveApplication = async (req, res) => {
     }
 };
 
+
 /* =====================================================
    DISTRICT — REJECT
 ===================================================== */
 export const rejectApplication = async (req, res) => {
     try {
         const { refId } = req.params;
-        const { reason } = req.body;
 
-        const beneficiary = await Beneficiary.findOne({
-            "applications.applicationRefId": refId
-        });
+        const application = await Application.findOne({ application_id: refId });
+
+        if (!application)
+            return res.status(404).json({
+                success: false,
+                message: "Application not found"
+            });
+
+        const beneficiary = await Beneficiary.findById(application.beneficiary_id);
 
         if (!beneficiary)
             return res.status(404).json({
                 success: false,
-                message: "Application not found"
+                message: "Beneficiary not found"
             });
 
         if (beneficiary.district !== req.user.district)
@@ -206,35 +269,30 @@ export const rejectApplication = async (req, res) => {
                 message: "District mismatch — cannot reject"
             });
 
-        const app = beneficiary.applications.find(
-            (a) => a.applicationRefId === refId
-        );
-
-        if (app.status !== "UNDER_VERIFICATION")
+        if (application.status !== "UNDER_VERIFICATION")
             return res.status(400).json({
                 success: false,
-                message: `Cannot reject application in status: ${app.status}`
+                message: `Cannot reject application in status: ${application.status}`
             });
 
-        app.status = "DISTRICT_REJECTED";
+        application.status = "DISTRICT_REJECTED";
+        application.districtOfficerId = req.user.officerId;
+        application.districtOfficerComments = req.body.reason || "Rejected";
 
-        app.districtOfficerId = req.user.officerId;
-        app.districtOfficerComments =
-            reason || "Rejected by District Officer";
-
-        app.statusHistory.push({
+        application.statusHistory.push({
             status: "DISTRICT_REJECTED",
             changedAt: new Date(),
             changedByRole: "DISTRICT_OFFICER",
-            changedById: req.user.officerId
+            changedById: req.user._id
         });
 
-        await beneficiary.save();
+        await application.save();
 
         return res.json({
             success: true,
             message: "Application rejected"
         });
+
     } catch (err) {
         console.error("DISTRICT_REJECT:", err);
         return res.status(500).json({
@@ -243,6 +301,7 @@ export const rejectApplication = async (req, res) => {
         });
     }
 };
+
 
 /* =====================================================
    DISTRICT — PDF DOWNLOAD (DISTRICT_APPROVED ONLY)

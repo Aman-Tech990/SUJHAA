@@ -1,182 +1,277 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  User, 
-  MapPin, 
-  Calendar, 
-  FileText, 
-  CheckCircle, 
-  XCircle, 
-  ShieldCheck 
-} from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
 
-// 1. MOVE MOCK DATA OUTSIDE THE COMPONENT
-// This prevents it from being redefined on every render
-const MOCK_DB = {
-  101: {
-    name: "Ravi Kumar",
-    digitalId: "SC-OD-2024-8821",
-    fatherName: "Mahesh Kumar",
-    dob: "1995-08-12",
-    gender: "Male",
-    category: "Scheduled Caste (SC)",
-    phone: "+91 98765 43210",
-    address: "Village Rampur, Block B, Khordha, Odisha",
-    scheme: "Skill Development Training",
-    status: "Verified by Field Officer",
-    fieldOfficerNote: "Candidate visited. Shop location verified. Tools are present.",
-    documents: ["Domicile Certificate", "Caste Certificate", "Income Certificate"]
-  },
-  102: {
-    name: "Sunita Devi",
-    digitalId: "SC-OD-2024-9932",
-    fatherName: "Rajesh Singh",
-    dob: "1992-04-20",
-    gender: "Female",
-    category: "Scheduled Caste (SC)",
-    phone: "+91 88776 65544",
-    address: "Sector 4, Housing Board, Khordha, Odisha",
-    scheme: "Income Generation Scheme",
-    status: "Verified by Field Officer",
-    fieldOfficerNote: "Cattle shed construction complete. Verified physical assets.",
-    documents: ["Domicile Certificate", "Caste Certificate", "Income Certificate"]
-  }
-};
+import {
+  ArrowLeft,
+  User,
+  MapPin,
+  Mail,
+  FileText,
+  CheckCircle,
+  XCircle,
+  ShieldCheck,
+  File,
+  FileCheck,
+  FileTextIcon,
+  Image as ImageIcon,
+  FileArchive,
+  IdCard,
+  Calendar,
+} from "lucide-react";
+import { toast } from "sonner";
 
 const DistrictBeneficiaryForm = () => {
-  const { id } = useParams(); 
+  const { id } = useParams(); // APP-830953
   const navigate = useNavigate();
   const [data, setData] = useState(null);
 
-  useEffect(() => {
-    // 2. USE SETTIMEOUT TO SIMULATE REAL API CALL
-    // This fixes the "Synchronous State Update" error
-    const timer = setTimeout(() => {
-      if (MOCK_DB[id]) {
-        setData(MOCK_DB[id]);
-      }
-    }, 300); // 300ms delay simulates network lag
+  const [loadingApprove, setLoadingApprove] = useState(false);
+  const [loadingReject, setLoadingReject] = useState(false);
 
-    // Cleanup function (good practice)
-    return () => clearTimeout(timer);
+  /* ICON SELECTOR BASED ON DOCUMENT NAME */
+  const getDocIcon = (name) => {
+    const lower = name.toLowerCase();
+    if (lower.includes("income")) return <FileTextIcon className="text-green-700" size={18} />;
+    if (lower.includes("domicile")) return <FileArchive className="text-blue-600" size={18} />;
+    if (lower.includes("caste")) return <FileCheck className="text-purple-600" size={18} />;
+    if (lower.includes("aadhaar")) return <ImageIcon className="text-orange-600" size={18} />;
+    return <File className="text-gray-600" size={18} />;
+  };
+
+  /* ============================================
+      FETCH DATA FROM BACKEND
+  ============================================ */
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:5000/api/district/application/${id}`,
+          { withCredentials: true }
+        );
+
+        setData({
+          /* Beneficiary */
+          name: res.data.beneficiary.name,
+          digitalId: res.data.beneficiary.digitalId,
+          aadhaarNumber: res.data.beneficiary.aadhaarNumber,
+          category: res.data.beneficiary.category || "SC",
+          phone: res.data.beneficiary.phone,
+          email: res.data.beneficiary.email,
+          address: res.data.beneficiary.address,
+
+          /* Application */
+          applicationId: res.data.application.applicationId,
+          appliedAt: res.data.application.appliedAt,
+          schemeName: res.data.application.schemeName,
+          schemeCategory: res.data.application.schemeCategory,
+          schemeDescription: res.data.application.schemeDescription,
+          status: res.data.application.status,
+          fieldOfficerVerification: res.data.application.fieldOfficerVerification,
+
+          /* Documents (Array of {name,url}) */
+          documents: res.data.application.documents || [],
+        });
+      } catch (err) {
+        console.error(err);
+        alert("Failed to load application details");
+      }
+    };
+
+    fetchData();
   }, [id]);
 
-  if (!data) return (
-    <div className="flex h-screen items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent mx-auto mb-4"></div>
-        <p className="text-gray-500 font-medium">Loading Application Details...</p>
+  /* ============================================
+      APPROVE FUNCTION
+  ============================================ */
+  const handleApprove = async () => {
+    if (!window.confirm("Are you sure you want to approve this application?")) return;
+
+    try {
+      setLoadingApprove(true);
+
+      const res = await axios.post(
+        `http://localhost:5000/api/district/application/${id}/approve`,
+        { comments: "Approved by District Officer" },
+        { withCredentials: true }
+      );
+      console.log(res.data);
+      toast.success(res.data.message || "Application Approved Successfully!");
+      navigate("/districtOfficer/dashboard");
+    } catch (err) {
+      console.error(err);
+      toast.error("Approval failed!");
+    } finally {
+      setLoadingApprove(false);
+    }
+  };
+
+  /* ============================================
+      REJECT FUNCTION
+  ============================================ */
+  const handleReject = async () => {
+    const reason = prompt("Enter rejection reason:");
+
+    if (!reason) return toast.info("Rejection reason required!");
+
+    try {
+      setLoadingReject(true);
+
+      const res = await axios.post(
+        `http://localhost:5000/api/district/application/${id}/reject`,
+        { reason },
+        { withCredentials: true }
+      );
+
+      toast.success("Application Rejected Successfully!");
+      navigate("/districtOfficer/dashboard");
+    } catch (err) {
+      console.error(err);
+      toast.error("Rejection failed!");
+    } finally {
+      setLoadingReject(false);
+    }
+  };
+
+  if (!data)
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin border-4 border-green-600 border-t-transparent rounded-full mx-auto"></div>
+          <p className="text-gray-500 mt-3">Loading Application...</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+
+  /* ============================================
+      UI
+  ============================================ */
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      
-      {/* Top Navigation */}
-      <button 
-        onClick={() => navigate(-1)} 
-        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 font-medium transition-colors"
+
+      {/* BACK BUTTON */}
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
       >
-        <ArrowLeft size={20} /> Back to Dashboard
+        <ArrowLeft size={20} /> Back
       </button>
 
-      {/* Main Card */}
-      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden animate-in fade-in duration-300">
-        
-        {/* Header Section */}
-        <div className="bg-[#00a851] p-6 text-white flex justify-between items-start">
+      <div className="max-w-5xl mx-auto bg-white shadow border rounded-xl">
+
+        {/* HEADER */}
+        <div className="bg-[#00a851] p-6 text-white flex justify-between items-center">
           <div>
-            <div className="flex items-center gap-2 opacity-90 text-sm font-medium mb-1">
-              <ShieldCheck size={16} /> Verified Application
-            </div>
+            <p className="flex items-center gap-2 opacity-90 mb-1">
+              <ShieldCheck size={18} /> Verified Application
+            </p>
             <h1 className="text-2xl font-bold">{data.name}</h1>
-            <p className="opacity-80">Digital ID: {data.digitalId}</p>
+
+            <p className="flex items-center gap-2 opacity-90 mt-1">
+              <IdCard size={16} /> {data.digitalId}
+            </p>
           </div>
-          <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-            <User size={32} className="text-white" />
-          </div>
+
+          <User size={40} className="text-white bg-white/20 p-2 rounded-full" />
         </div>
 
-        {/* Details Grid */}
-        <div className="p-8 space-y-8">
-          
-          {/* Section 1: Personal Information */}
+        {/* CONTENT */}
+        <div className="p-8 space-y-10">
+
+          {/* PERSONAL DETAILS */}
           <section>
-            <h3 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4 flex items-center gap-2">
-              <User size={18} className="text-gray-400" /> Personal Details
+            <h3 className="text-lg font-bold border-b pb-2 mb-4 flex items-center gap-2">
+              <User size={18} /> Personal Details
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="text-xs font-bold text-gray-500 uppercase">Full Name</label>
-                <p className="text-gray-900 font-medium">{data.name}</p>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-gray-500 uppercase">Father's Name</label>
-                <p className="text-gray-900 font-medium">{data.fatherName}</p>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-gray-500 uppercase">Date of Birth</label>
-                <p className="text-gray-900 font-medium flex items-center gap-2">
-                  <Calendar size={14} className="text-gray-400" /> {data.dob}
-                </p>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-gray-500 uppercase">Category</label>
-                <p className="text-gray-900 font-medium">{data.category}</p>
-              </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <Info label="Full Name" value={data.name} />
+              <Info label="Aadhaar Number" value={data.aadhaarNumber} />
+              <Info label="Category" value={data.category} />
+              <Info label="Email ID" value={data.email} icon={<Mail size={14} />} />
+
               <div className="md:col-span-2">
-                <label className="text-xs font-bold text-gray-500 uppercase">Current Address</label>
-                <p className="text-gray-900 font-medium flex items-center gap-2">
-                  <MapPin size={14} className="text-gray-400" /> {data.address}
-                </p>
+                <Info label="Address" value={data.address} icon={<MapPin size={14} />} />
               </div>
             </div>
           </section>
 
-          {/* Section 2: Scheme & Verification */}
+          {/* APPLICATION INFO */}
           <section>
-            <h3 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4 flex items-center gap-2">
-              <FileText size={18} className="text-gray-400" /> Scheme & Verification
+            <h3 className="text-lg font-bold border-b pb-2 mb-4 flex items-center gap-2">
+              <FileText size={18} /> Application Info
             </h3>
-            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4">
-              <h4 className="text-sm font-bold text-blue-800 mb-1">Field Officer Report</h4>
-              <p className="text-sm text-blue-700 italic">"{data.fieldOfficerNote}"</p>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <Info label="Application ID" value={data.applicationId} />
+              <Info label="Applied At" value={new Date(data.appliedAt).toLocaleString()} icon={<Calendar size={14} />} />
+              <Info label="Scheme Category" value={data.schemeCategory} />
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-bold text-gray-500 uppercase">Applied Scheme</label>
-                <p className="text-gray-900 font-medium">{data.scheme}</p>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-gray-500 uppercase">Documents Uploaded</label>
-                <div className="flex gap-2 mt-1">
-                  {data.documents.map((doc, index) => (
-                    <span key={index} className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600 border border-gray-200">
-                      {doc}
-                    </span>
-                  ))}
-                </div>
-              </div>
+
+            <p className="mt-3 text-gray-700">{data.schemeDescription}</p>
+
+            <p className="mt-2 font-medium">
+              Field Officer Verified:{" "}
+              <span className="text-green-600">Yes</span>
+            </p>
+          </section>
+
+          {/* DOCUMENTS */}
+          <section>
+            <h3 className="text-lg font-bold border-b pb-2 mb-4 flex items-center gap-2">
+              <FileText size={18} /> Documents Uploaded
+            </h3>
+
+            <div className="flex flex-col gap-3">
+              {data.documents.map((doc, index) => (
+                <a
+                  key={index}
+                  href={doc.url}
+                  target="_blank"
+                  className="flex items-center gap-3 bg-gray-100 px-4 py-3 rounded-lg border hover:bg-gray-200 transition"
+                >
+                  {getDocIcon(doc.name)}
+                  <span className="font-medium">{doc.name}</span>
+                </a>
+              ))}
             </div>
           </section>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-4 pt-4 border-t">
-            <button className="flex items-center gap-2 px-6 py-3 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 font-medium transition">
-              <XCircle size={20} /> Reject Application
+          {/* ACTION BUTTONS */}
+          <div className="flex justify-end gap-4 border-t pt-6">
+            <button
+              onClick={handleReject}
+              disabled={loadingReject}
+              className="cursor-pointer px-6 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50"
+            >
+              <XCircle size={18} className="inline-block mr-2" />
+              {loadingReject ? "Rejecting..." : "Reject Application"}
             </button>
-            <button className="flex items-center gap-2 px-6 py-3 bg-[#00a851] text-white rounded-lg hover:bg-green-700 font-medium shadow-md transition">
-              <CheckCircle size={20} /> Approve Application
+
+            <button
+              onClick={handleApprove}
+              disabled={loadingApprove}
+              className="cursor-pointer px-6 py-3 bg-[#00a851] text-white rounded-lg hover:bg-green-700"
+            >
+              <CheckCircle size={18} className="inline-block mr-2" />
+              {loadingApprove ? "Approving..." : "Approve Application"}
             </button>
           </div>
-
         </div>
       </div>
     </div>
   );
 };
+
+/* Small component for readable UI */
+const Info = ({ label, value, icon }) => (
+  <div>
+    <p className="text-xs text-gray-500 uppercase font-bold">{label}</p>
+    <p className="text-gray-800 font-medium flex items-center gap-2">
+      {icon} {value}
+    </p>
+  </div>
+);
 
 export default DistrictBeneficiaryForm;

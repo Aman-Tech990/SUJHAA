@@ -1,4 +1,3 @@
-import { sendOTPEmail } from './sendEmail.js';
 
 // Generate 6-digit OTP
 export const generateOTP = () => {
