@@ -56,7 +56,7 @@ const Login = () => {
               break;
 
             case "TRAINER":
-              window.location.href = "/trainer/dashboard";
+              window.location.href = "/trainer";
               break;
 
             default:

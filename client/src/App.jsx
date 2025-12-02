@@ -29,6 +29,16 @@ import StateFundReport from './roles/State/StateFundReport';
 import StateMISReport from './roles/State/StateMISReport';
 import StateTrainingReports from './roles/State/StateTrainingReport';
 
+// Central Officer
+import CentralLayout from './roles/Central/CentralLayout';
+import CentralDashboard from './roles/Central/CentralDashboard';
+import CentralStatePerformance from './roles/Central/CentralStates';
+import CentralFundsDisbursement from './roles/Central/CentralFunds';
+import CentralBeneficiaryAnalytics from './roles/Central/CentralAnalytics';
+
+// Trainer
+import TrainerDashboard from './roles/Trainer/TrainerDashboard';
+
 // Auth
 import Register from './auth/Register';
 import Login from './auth/Login';
@@ -119,7 +129,38 @@ const App = () => {
           element: <StateTrainingReports />
         },
       ]
-    }
+    },
+    {
+      path: '/centralOfficer',
+      element: <CentralLayout />,
+      children: [
+        {
+          path: "dashboard",
+          element: <CentralDashboard />
+        },
+        {
+          index: true,
+          element: <Navigate to="dashboard" replace />
+        },
+        {
+          path: "statesPerformance",
+          element: <CentralStatePerformance />
+        },
+        {
+          path: "funds",
+          element: <CentralFundsDisbursement />
+        },
+        {
+          path: "beneficiaryanalytics",
+          element: <CentralBeneficiaryAnalytics />
+        },
+
+      ]
+    },
+    {
+      path: '/trainer',
+      element: <TrainerDashboard />
+    },
   ]);
 
   return <RouterProvider router={appRouter} />;

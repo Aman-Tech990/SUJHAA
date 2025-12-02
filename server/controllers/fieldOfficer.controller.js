@@ -148,6 +148,8 @@ export const verifyBeneficiary = async (req, res) => {
 
         if (finalMatch) {
             application.status = "UNDER_VERIFICATION";
+            application.field_verified = true;
+            application.field_verified_at = new Date();
         } else {
             application.status = "REJECTED";
             application.rejection_reason =
