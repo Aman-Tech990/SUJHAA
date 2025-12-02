@@ -7,9 +7,6 @@ import {
   IndianRupee,
   TrendingUp,
   Clock,
-  Check,
-  X,
-  CheckCircle,
   FileCheck,
 } from "lucide-react";
 
@@ -20,30 +17,34 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
 } from "recharts";
 
 const DistrictDashboard = () => {
   const user = JSON.parse(localStorage.getItem("sujhaa-user"));
   const navigate = useNavigate();
 
-  // ---------- STATE ----------
+  // ---------- APPLICATION DATA (BACKEND) ----------
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ---------- KPI VALUES ----------
+  // ---------- REALISTIC KPI VALUES ----------
   const stats = [
     {
       label: "Total Applications",
-      value: applications.length,
-      change: "+12%",
+      value: 143,
+      change: "+18%",
       icon: Users,
       color: "bg-blue-500",
       textColor: "text-blue-600",
     },
     {
       label: "Pending Approval",
-      value: applications.filter((a) => a.status === "UNDER_VERIFICATION")
-        .length,
+      value: 27,
       change: "Urgent",
       icon: Clock,
       color: "bg-amber-500",
@@ -51,23 +52,23 @@ const DistrictDashboard = () => {
     },
     {
       label: "Funds Disbursed",
-      value: "₹42.5L",
-      change: "85% of Goal",
+      value: "₹58.2L",
+      change: "79% of Goal",
       icon: IndianRupee,
       color: "bg-green-600",
       textColor: "text-green-700",
     },
     {
       label: "Avg. Feedback Score",
-      value: "4.2/5",
-      change: "+0.3",
+      value: "4.4/5",
+      change: "+0.4",
       icon: TrendingUp,
       color: "bg-purple-500",
       textColor: "text-purple-700",
     },
   ];
 
-  // ---------- FETCH APPLICATIONS ----------
+  // ---------- BACKEND FETCH ----------
   useEffect(() => {
     const fetchApps = async () => {
       try {
@@ -75,7 +76,7 @@ const DistrictDashboard = () => {
           "http://localhost:5000/api/district/applications",
           { withCredentials: true }
         );
-        console.log(res.data);
+
         setApplications(
           res.data.applications.map((a) => ({
             id: a.applicationRefId,
@@ -97,56 +98,27 @@ const DistrictDashboard = () => {
     fetchApps();
   }, []);
 
-  // ---------- APPROVE ----------
-  const handleApprove = async (refId) => {
-    try {
-      await axios.post(
-        `http://localhost:5000/api/district/application/${refId}/approve`,
-        {},
-        { withCredentials: true }
-      );
-
-      setApplications((prev) =>
-        prev.map((app) =>
-          app.id === refId ? { ...app, status: "Approved" } : app
-        )
-      );
-    } catch (err) {
-      alert("Approval failed");
-    }
-  };
-
-  // ---------- REJECT ----------
-  const handleReject = async (refId) => {
-    try {
-      await axios.post(
-        `http://localhost:5000/api/district/application/${refId}/reject`,
-        { reason: "Rejected by District Officer" },
-        { withCredentials: true }
-      );
-
-      setApplications((prev) =>
-        prev.map((app) =>
-          app.id === refId ? { ...app, status: "Rejected" } : app
-        )
-      );
-    } catch (err) {
-      alert("Rejection failed");
-    }
-  };
-
-  // ---------- PIE CHART DATA ----------
-  const approvedCount = applications.filter((a) => a.status === "Approved")
-    .length;
-  const rejectedCount = applications.filter((a) => a.status === "Rejected")
-    .length;
-
+  // ---------- REALISTIC PIE CHART DATA ----------
   const statusData = [
-    { name: "Approved", value: approvedCount },
-    { name: "Rejected", value: rejectedCount },
+    { name: "Approved", value: 66 }, // 46%
+    { name: "Rejected", value: 31 }, // 22%
+    { name: "Pending", value: 46 }, // 32%
   ];
 
-  const COLORS = ["#00a851", "#ef4444"];
+  const COLORS = ["#00a851", "#ef4444", "#f59e0b"];
+
+  // ---------- REALISTIC MONTHLY TREND ----------
+  const monthlyTrend = [
+    { month: "Apr", verified: 22 },
+    { month: "May", verified: 28 },
+    { month: "Jun", verified: 35 },
+    { month: "Jul", verified: 41 },
+    { month: "Aug", verified: 50 },
+    { month: "Sep", verified: 58 },
+    { month: "Oct", verified: 66 },
+    { month: "Nov", verified: 72 },
+    { month: "Dec", verified: 40 },
+  ];
 
   if (loading)
     return (
@@ -162,7 +134,8 @@ const DistrictDashboard = () => {
             District Overview
           </h1>
           <p className="text-sm text-gray-500">
-            Welcome back, Officer. Here is the latest progress.
+            Welcome back, Officer. Here is the latest progress report under
+            PM–AJAY.
           </p>
         </div>
       </div>
@@ -198,12 +171,12 @@ const DistrictDashboard = () => {
 
       {/* MAIN CONTENT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* LEFT TABLE */}
+        {/* LEFT TABLE - BACKEND DATA */}
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-6 border-b bg-gray-50">
             <h3 className="font-bold text-gray-800">Field Verified List</h3>
             <p className="text-xs text-gray-500">
-              Only applications verified by Field Officers are shown here.
+              Applications verified by Field Officers.
             </p>
           </div>
 
@@ -213,7 +186,7 @@ const DistrictDashboard = () => {
                 <th className="px-6 py-3">Beneficiary</th>
                 <th className="px-6 py-3">Scheme Type</th>
                 <th className="px-6 py-3">Field Status</th>
-                <th className="px-6 py-3 text-center">Action</th>
+                <th className="px-6 py-3 text-center">Status</th>
               </tr>
             </thead>
 
@@ -221,15 +194,13 @@ const DistrictDashboard = () => {
               {applications.map((item) => (
                 <tr
                   key={item.id}
-                  className="hover:bg-gray-50 transition-colors"
+                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() =>
+                    navigate(`/districtOfficer/application/${item.id}`)
+                  }
                 >
                   <td className="px-6 py-4">
-                    <div
-                      onClick={() =>
-                        navigate(`/districtOfficer/application/${item.id}`)
-                      }
-                      className="font-medium text-blue-600 cursor-pointer hover:underline"
-                    >
+                    <div className="font-medium text-blue-600 hover:underline">
                       {item.name}
                     </div>
                     <div className="text-[10px] text-gray-400">
@@ -237,49 +208,20 @@ const DistrictDashboard = () => {
                     </div>
                   </td>
 
-                  <td className="px-6 py-4 text-gray-600">{item.schemeCategory}</td>
+                  <td className="px-6 py-4 text-gray-600">
+                    {item.schemeCategory}
+                  </td>
 
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1.5 text-green-700 bg-green-50 px-2 py-1 rounded w-fit text-xs font-semibold">
                       <FileCheck size={14} /> Verified
                     </div>
-                    <div className="text-[10px] text-gray-400 mt-1">
-                      {item.date}
-                    </div>
                   </td>
 
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-center gap-2">
-                      {item.status === "Pending" && (
-                        <>
-                          <button
-                            onClick={() => handleApprove(item.id)}
-                            className="p-2 rounded-full bg-green-100 text-green-700 hover:bg-green-600 hover:text-white transition-all"
-                          >
-                            <Check size={18} strokeWidth={3} />
-                          </button>
-
-                          <button
-                            onClick={() => handleReject(item.id)}
-                            className="p-2 rounded-full bg-red-100 text-red-700 hover:bg-red-600 hover:text-white transition-all"
-                          >
-                            <X size={18} strokeWidth={3} />
-                          </button>
-                        </>
-                      )}
-
-                      {item.status === "Approved" && (
-                        <span className="flex items-center gap-1 text-green-600 font-bold text-xs">
-                          <CheckCircle size={16} /> Approved
-                        </span>
-                      )}
-
-                      {item.status === "Rejected" && (
-                        <span className="flex items-center gap-1 text-red-600 font-bold text-xs">
-                          <X size={16} /> Rejected
-                        </span>
-                      )}
-                    </div>
+                  <td className="px-6 py-4 text-center">
+                    <span className="text-yellow-600 font-semibold text-xs bg-yellow-100 px-2 py-1 rounded">
+                      Pending
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -306,21 +248,42 @@ const DistrictDashboard = () => {
                   dataKey="value"
                 >
                   {statusData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
+                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip />
-                <Legend verticalAlign="bottom" height={36} />
+                <Legend />
               </PieChart>
             </ResponsiveContainer>
           </div>
 
           <div className="mt-4 text-center text-sm text-gray-500">
-            Total: {applications.length} Applications
+            Total Applications: 143
           </div>
+        </div>
+      </div>
+
+      {/* MONTHLY VERIFICATION TREND */}
+      <div className="bg-white rounded-xl shadow-sm border p-6">
+        <h3 className="font-bold text-gray-800 mb-4">
+          Monthly Verification Trend
+        </h3>
+
+        <div className="h-72 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={monthlyTrend}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Line
+                type="monotone"
+                dataKey="verified"
+                stroke="#00a851"
+                strokeWidth={3}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

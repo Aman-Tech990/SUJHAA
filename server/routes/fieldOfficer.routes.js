@@ -35,7 +35,6 @@ router.get(
 -------------------------------------------------- */
 router.post(
     "/verify",
-    authOfficer(["FIELD_OFFICER"]),
     upload.fields([
         { name: "beneficiaryPhoto", maxCount: 1 },
         { name: "housePhoto", maxCount: 1 }

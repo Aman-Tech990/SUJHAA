@@ -16,10 +16,9 @@ import BeneficiaryProfile from './roles/Beneficiary/BeneficiaryProfile';
 // District Officer
 import DistrictLayout from './roles/District/DistrictLayout';
 import DistrictDashboard from './roles/District/DistrictDashboard';
-import MISReport from './roles/District/MISReport';
 import DistrictBeneficiaryForm from './roles/District/DistrictBenificiaryForm';
 import DistrictFeedbackAnalysis from './roles/District/DistrictFeedbackAnalysis';
-import TestVerify from './TestVerify';
+import ProjectProgress from './roles/District/ProjectProgress';
 
 // State Officer
 import StateLayout from './roles/State/StateLayout';
@@ -28,16 +27,18 @@ import StateBeneficiary from './roles/State/StateBeneficiary';
 import StateFundReport from './roles/State/StateFundReport';
 import StateMISReport from './roles/State/StateMISReport';
 import StateTrainingReports from './roles/State/StateTrainingReport';
+import StateApplications from './roles/State/StateApplications';
+import StateApplicationDetails from './roles/State/StateApplicationDetails';
 
-// Central Officer
-import CentralLayout from './roles/Central/CentralLayout';
-import CentralDashboard from './roles/Central/CentralDashboard';
-import CentralStatePerformance from './roles/Central/CentralStates';
-import CentralFundsDisbursement from './roles/Central/CentralFunds';
-import CentralBeneficiaryAnalytics from './roles/Central/CentralAnalytics';
+// // Central Officer
+// import CentralLayout from './roles/Central/CentralLayout';
+// import CentralDashboard from './roles/Central/CentralDashboard';
+// import CentralStatePerformance from './roles/Central/CentralStates';
+// import CentralFundsDisbursement from './roles/Central/CentralFunds';
+// import CentralBeneficiaryAnalytics from './roles/Central/CentralAnalytics';
 
-// Trainer
-import TrainerDashboard from './roles/Trainer/TrainerDashboard';
+// // Trainer
+// import TrainerDashboard from './roles/Trainer/TrainerDashboard';
 
 // Auth
 import Register from './auth/Register';
@@ -45,6 +46,7 @@ import Login from './auth/Login';
 
 // Landing
 import LandingPage from './pages/LandingPage';
+
 
 // TODO LATER:
 // import StateLayout
@@ -60,9 +62,6 @@ const App = () => {
     { path: "/", element: <LandingPage /> },
     { path: "/register", element: <Register /> },
     { path: "/login", element: <Login /> },
-
-    /* TEST ROUTE (TEMPORARY) */
-    { path: "/test-verify", element: <TestVerify /> },
 
     /* BENEFICIARY ROUTES */
     {
@@ -95,7 +94,7 @@ const App = () => {
       children: [
         { path: "dashboard", element: <DistrictDashboard /> },
         { index: true, element: <Navigate to="dashboard" replace /> },
-        { path: "misreport", element: <MISReport /> },
+        { path: "projectProgress", element: <ProjectProgress /> },
         { path: "feedbackAnalysis", element: <DistrictFeedbackAnalysis /> },
         { path: "application/:id", element: <DistrictBeneficiaryForm /> },
       ]
@@ -128,39 +127,47 @@ const App = () => {
           path: "trainingreport",
           element: <StateTrainingReports />
         },
+        {
+          path: "applications",
+          element: <StateApplications />
+        },
+        {
+          path: "application/:refId",
+          element: <StateApplicationDetails />
+        },
       ]
     },
-    {
-      path: '/centralOfficer',
-      element: <CentralLayout />,
-      children: [
-        {
-          path: "dashboard",
-          element: <CentralDashboard />
-        },
-        {
-          index: true,
-          element: <Navigate to="dashboard" replace />
-        },
-        {
-          path: "statesPerformance",
-          element: <CentralStatePerformance />
-        },
-        {
-          path: "funds",
-          element: <CentralFundsDisbursement />
-        },
-        {
-          path: "beneficiaryanalytics",
-          element: <CentralBeneficiaryAnalytics />
-        },
+    // {
+    //   path: '/centralOfficer',
+    //   element: <CentralLayout />,
+    //   children: [
+    //     {
+    //       path: "dashboard",
+    //       element: <CentralDashboard />
+    //     },
+    //     {
+    //       index: true,
+    //       element: <Navigate to="dashboard" replace />
+    //     },
+    //     {
+    //       path: "statesPerformance",
+    //       element: <CentralStatePerformance />
+    //     },
+    //     {
+    //       path: "funds",
+    //       element: <CentralFundsDisbursement />
+    //     },
+    //     {
+    //       path: "beneficiaryanalytics",
+    //       element: <CentralBeneficiaryAnalytics />
+    //     },
 
-      ]
-    },
-    {
-      path: '/trainer',
-      element: <TrainerDashboard />
-    },
+    //   ]
+    // },
+    // {
+    //   path: '/trainer',
+    //   element: <TrainerDashboard />
+    // },
   ]);
 
   return <RouterProvider router={appRouter} />;

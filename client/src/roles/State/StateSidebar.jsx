@@ -26,9 +26,9 @@ const StateSidebar = ({ onLinkClick }) => {
       icon: Folder
     },
     { 
-      name: 'State MIS Report', 
-      path: '/stateOfficer/MISreport', 
-      icon: IndianRupeeIcon
+      name: 'District Applications', 
+      path: '/stateOfficer/applications', 
+      icon: User
     },
   ];
 

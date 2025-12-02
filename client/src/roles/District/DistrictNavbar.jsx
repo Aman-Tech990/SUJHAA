@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Bell, Menu, User, LogOut, ChevronDown, ShieldCheck, FileText } from 'lucide-react';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 const DistrictNavbar = ({ onMenuClick }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-
+  const navigate = useNavigate();
   // // 1. Mock Data for District Officer
   // const user = {
   //   name: "Amit Verma",
@@ -12,6 +15,27 @@ const DistrictNavbar = ({ onMenuClick }) => {
   //   initials: "AV"
   // };
   const user = JSON.parse(localStorage.getItem("sujhaa-user"));
+
+  const handleLogout = async () => {
+    try {
+      const res = await axios.get(
+        "http://localhost:5000/api/auth/logout",
+        {},
+        { withCredentials: true }
+      );
+
+      toast.success(res.data.message || "Logged out successfully");
+
+      localStorage.removeItem("sujhaa-user");
+      localStorage.removeItem("token");
+
+      navigate("/login");
+    } catch (err) {
+      console.log(err);
+      toast.error("Logout failed");
+    }
+  };
+
   return (
     // Main Header with the Green Background preserved
     < header className="relative z-30 flex h-16 w-full items-center justify-between border-b border-green-600 bg-[#00a851] px-4 shadow-md sm:px-6 lg:px-8" >
@@ -85,18 +109,14 @@ const DistrictNavbar = ({ onMenuClick }) => {
                   <p className="text-xs text-gray-500 truncate">{user.district}</p>
                 </div>
 
-                <a href="#" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                  <User size={16} className="mr-2" /> My Profile
-                </a>
-                <a href="#" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                  <FileText size={16} className="mr-2" /> Reports
-                </a>
-
                 <div className="border-t border-gray-100 my-1"></div>
 
-                <a href="#" className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                  <LogOut size={16} className="mr-2" /> Sign out
-                </a>
+                <button
+                  onClick={handleLogout}
+                  className="cursor-pointer flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                >
+                  <LogOut size={16} className="mr-2" /> Log out
+                </button>
               </div>
             )
           }

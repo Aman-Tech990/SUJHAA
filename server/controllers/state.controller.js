@@ -1,36 +1,40 @@
 import Beneficiary from "../models/Beneficiary.js";
+import Application from "../models/Application.js";
 import PDFDocument from "pdfkit";
 import axios from "axios";
 import { generateBarChart, generatePieChart } from "../utils/chartGenerator.js";
 
 export const getStateApplications = async (req, res) => {
     try {
-        const state = req.user.state;
+        const state = req.user.state.toLowerCase();
 
-        const apps = await Beneficiary.aggregate([
-            { $unwind: "$applications" },
-            {
-                $match: {
-                    state,
-                    "applications.status": "APPROVED"   // district approved
-                }
-            },
-            {
-                $project: {
-                    digitalId: 1,
-                    name: 1,
-                    phone: 1,
-                    district: 1,
-                    schemeName: "$applications.schemeName",
-                    applicationRefId: "$applications.applicationRefId",
-                    status: "$applications.status",
-                    schemeCategory: "$applications.schemeCategory",
-                    appliedAt: "$applications.appliedAt"
-                }
-            }
-        ]);
+        const apps = await Application.find({
+            status: "DISTRICT_APPROVED"
+        })
+            .populate("scheme_id")
+            .populate("beneficiary_id");
 
-        return res.json({ success: true, applications: apps });
+        const filtered = apps.filter(
+            app =>
+                app.beneficiary_id &&
+                app.beneficiary_id.state &&
+                app.beneficiary_id.state.toLowerCase() === state
+        );
+
+        const formatted = filtered.map(app => ({
+            applicationRefId: app.application_id,
+            name: app.beneficiary_id?.name,
+            digitalId: app.beneficiary_id?.digitalId,
+            phone: app.beneficiary_id?.phone,
+            district: app.beneficiary_id?.district,
+            state: app.beneficiary_id?.state,
+            schemeName: app.scheme_id?.scheme_name,
+            schemeCategory: app.scheme_id?.category,
+            appliedAt: app.applied_date
+        }));
+
+        return res.json({ success: true, applications: formatted });
+
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }
@@ -40,18 +44,16 @@ export const getStateApplicationDetails = async (req, res) => {
     try {
         const { refId } = req.params;
 
-        const beneficiary = await Beneficiary.findOne({
-            "applications.applicationRefId": refId
-        });
+        const app = await Application.findOne({ application_id: refId })
+            .populate("scheme_id")
+            .populate("beneficiary_id");
 
-        if (!beneficiary)
-            return res.status(404).json({ success: false, message: "Not found" });
-
-        const app = beneficiary.applications.find(a => a.applicationRefId === refId);
+        if (!app)
+            return res.status(404).json({ success: false, message: "Application not found" });
 
         return res.json({
             success: true,
-            beneficiary,
+            beneficiary: app.beneficiary_id,
             application: app
         });
 
@@ -63,18 +65,14 @@ export const getStateApplicationDetails = async (req, res) => {
 export const stateApprove = async (req, res) => {
     try {
         const { refId } = req.params;
-        const { comments } = req.body;
         const officer = req.user;
 
-        const b = await Beneficiary.findOne({
-            "applications.applicationRefId": refId
-        });
+        const app = await Application.findOne({ application_id: refId });
 
-        if (!b) return res.status(404).json({ success: false, message: "Not found" });
+        if (!app)
+            return res.status(404).json({ success: false, message: "Application not found" });
 
-        const app = b.applications.find(a => a.applicationRefId === refId);
-
-        if (app.status !== "APPROVED") {
+        if (app.status !== "DISTRICT_APPROVED") {
             return res.status(400).json({
                 success: false,
                 message: `Cannot approve. Current status: ${app.status}`
@@ -83,9 +81,16 @@ export const stateApprove = async (req, res) => {
 
         app.status = "STATE_APPROVED";
         app.stateOfficerId = officer.officerId;
-        app.stateOfficerComments = comments || "Approved by State Officer";
+        app.stateOfficerComments = req.body.comments || "Approved";
 
-        b.save();
+        app.statusHistory.push({
+            status: "STATE_APPROVED",
+            changedAt: new Date(),
+            changedByRole: "STATE_OFFICER",
+            changedById: officer._id
+        });
+
+        await app.save();
 
         return res.json({ success: true, message: "State approval successful" });
 
@@ -97,18 +102,14 @@ export const stateApprove = async (req, res) => {
 export const stateReject = async (req, res) => {
     try {
         const { refId } = req.params;
-        const { reason } = req.body;
         const officer = req.user;
 
-        const b = await Beneficiary.findOne({
-            "applications.applicationRefId": refId
-        });
+        const app = await Application.findOne({ application_id: refId });
 
-        if (!b) return res.status(404).json({ success: false, message: "Not found" });
+        if (!app)
+            return res.status(404).json({ success: false, message: "Application not found" });
 
-        const app = b.applications.find(a => a.applicationRefId === refId);
-
-        if (app.status !== "APPROVED") {
+        if (app.status !== "DISTRICT_APPROVED") {
             return res.status(400).json({
                 success: false,
                 message: `Cannot reject. Current status: ${app.status}`
@@ -117,9 +118,16 @@ export const stateReject = async (req, res) => {
 
         app.status = "STATE_REJECTED";
         app.stateOfficerId = officer.officerId;
-        app.stateOfficerComments = reason || "Rejected by State Officer";
+        app.stateOfficerComments = req.body.reason || "Rejected";
 
-        b.save();
+        app.statusHistory.push({
+            status: "STATE_REJECTED",
+            changedAt: new Date(),
+            changedByRole: "STATE_OFFICER",
+            changedById: officer._id
+        });
+
+        await app.save();
 
         return res.json({ success: true, message: "State rejection applied" });
 
@@ -127,6 +135,7 @@ export const stateReject = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
+
 
 const PM_AJAY_LOGO = "https://pmajay.dosje.gov.in/public/latest/images/logo.png";
 const INDIA_EMBLEM = "https://i.pinimg.com/736x/91/7e/8b/917e8b082195c4146040977a282e04db.jpg";
