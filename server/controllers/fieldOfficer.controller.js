@@ -20,7 +20,7 @@ export const getApplicationsForDistrict = async (req, res) => {
 
         const applications = await Application.find({
             beneficiary_id: { $in: beneficiaryIds },
-            status: "PENDING_FIELD_VERIFICATION"
+            status: "UNDER_VERIFICATION"
         }).populate("beneficiary_id",
             "name address district phone latitude longitude regPhotoUrl"
         );
