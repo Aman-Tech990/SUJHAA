@@ -1,180 +1,323 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from "react";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, AreaChart, Area
-} from 'recharts';
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Legend,
+} from "recharts";
 import {
   Users,
-  Wallet,
-  TrendingUp,
   Calendar,
-  Landmark // Icon for State Fund/Bank
-} from 'lucide-react';
+  Activity,
+  BarChart3,
+  Building2,
+  TrendingUp,
+  ArrowUpRight,
+  ArrowDownRight,
+} from "lucide-react";
 
-// --- MOCK DATA ---
-const officerData = {
-  // name: "Rajesh Kumar",
-  // state: "Odisha",
-  // Mocking financial totals for the cards
-  total_allocation_cr: 22.5,
-  total_utilized_cr: 15.9
+const STATE_DASHBOARD_KEY = "sujhaa-state-dashboard";
+
+const defaultStateSummary = {
+  totalBeneficiaries: 5050,
+  totalApplications: 6230,
+  approved: 4290,
+  pendingVerification: 820,
+  fundsAllocatedCr: 22.5,
+  fundsUtilizedCr: 15.9,
 };
 
-const districtPerformance = [
-  { district: 'Khordha', allocation: 500, utilized: 420, beneficiaries: 1200 },
-  { district: 'Cuttack', allocation: 450, utilized: 380, beneficiaries: 950 },
-  { district: 'Puri', allocation: 300, utilized: 290, beneficiaries: 800 },
-  { district: 'Ganjam', allocation: 600, utilized: 550, beneficiaries: 1500 },
-  { district: 'Sambalpur', allocation: 400, utilized: 150, beneficiaries: 600 },
-  { district: 'Balasore', allocation: 350, utilized: 300, beneficiaries: 700 },
-  { district: 'Rourkela', allocation: 200, utilized: 180, beneficiaries: 400 },
+const defaultInsights = [
+  {
+    msg: "Skill Development applications increased by 26% this month.",
+    trend: "positive",
+  },
+  {
+    msg: "Ganjam district shows high demand for dairy-based Income Generation schemes.",
+    trend: "neutral",
+  },
+  {
+    msg: "Cuttack utilization rate is lower than average, likely due to field officer delay.",
+    trend: "negative",
+  },
 ];
 
+const defaultActivityFeed = [
+  { time: "2 min ago", event: "Rajiv Sharma application approved at State Level." },
+  { time: "10 min ago", event: "Khordha District disbursed ₹8.2L for Skill Training." },
+  { time: "1 hour ago", event: "New scheme request received from Ganjam." },
+  { time: "3 hours ago", event: "District Officer Cuttack reviewed 45 applications." },
+];
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
+const defaultSchemeBreakdown = [
+  { name: "Income Generation", value: 45 },
+  { name: "Skill Development", value: 35 },
+  { name: "Infrastructure Support", value: 20 },
+];
 
-const user = JSON.parse(localStorage.getItem("sujhaa-user"));
+const COLORS = ["#4f46e5", "#06b6d4", "#f59e0b"];
+
+const user = JSON.parse(localStorage.getItem("sujhaa-user")) || {
+  state: "Odisha",
+  name: "State Officer",
+};
 
 const StateDashboard = () => {
+  const [stateSummary, setStateSummary] = useState(defaultStateSummary);
+  const [activityFeed, setActivityFeed] = useState(defaultActivityFeed);
+  const [schemeBreakdown, setSchemeBreakdown] = useState(defaultSchemeBreakdown);
 
-  // 1. Calculate Remaining Balance
-  const remainingBalance = (officerData.total_allocation_cr - officerData.total_utilized_cr).toFixed(1);
-
-  // 2. Logic: Filter Top 5 Districts by Utilization
-  const top5Districts = useMemo(() => {
-    return [...districtPerformance]
-      .sort((a, b) => b.utilized - a.utilized)
-      .slice(0, 5);
+  // Load dashboard state from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(STATE_DASHBOARD_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.stateSummary) setStateSummary(parsed.stateSummary);
+        if (parsed.activityFeed) setActivityFeed(parsed.activityFeed);
+        if (parsed.schemeBreakdown) setSchemeBreakdown(parsed.schemeBreakdown);
+      } catch (err) {
+        console.error("Failed to parse dashboard data:", err);
+      }
+    }
   }, []);
+
+  // Auto-update data every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStateSummary((prev) => ({
+        ...prev,
+        totalApplications: prev.totalApplications + Math.floor(Math.random() * 5),
+        approved: prev.approved + Math.floor(Math.random() * 3),
+        pendingVerification:
+          prev.pendingVerification > 10
+            ? prev.pendingVerification - Math.floor(Math.random() * 3)
+            : prev.pendingVerification + Math.floor(Math.random() * 2),
+        fundsUtilizedCr: +(prev.fundsUtilizedCr + Math.random() * 0.3).toFixed(1),
+      }));
+
+      setSchemeBreakdown((prev) =>
+        prev.map((item) => ({
+          ...item,
+          value: item.value + Math.floor(Math.random() * 3),
+        }))
+      );
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const totalSchemes = schemeBreakdown.reduce((a, b) => a + b.value, 0);
 
   return (
     <div className="p-6 bg-slate-50 min-h-screen font-sans text-slate-800">
-
-      {/* --- WELCOME SECTION --- */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">
-          Welcome back, {user.name} 
+      {/* ---------------- WELCOME ---------------- */}
+      <header className="mb-10">
+        <h1 className="text-3xl font-bold text-slate-900">
+          State Dashboard – {user.state}
         </h1>
-        <div className="flex items-center gap-2 text-slate-500 mt-1 text-sm">
-          <span>Overview for <span className="font-semibold text-slate-700">{user.state}</span></span>
-          <span>•</span>
-          <span className="flex items-center gap-1">
-            <Calendar size={14} /> {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </span>
-        </div>
-      </div>
+        <p className="flex items-center gap-2 text-slate-500 mt-1">
+          <Calendar size={16} />
+          {new Date().toLocaleDateString("en-IN", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
+        </p>
+      </header>
 
-      {/* --- KPI CARDS (Updated) --- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-
-        {/* 1. Total Allocation */}
-        <KPICard
-          title="Total Fund Allocated"
-          value={`₹ ${officerData.total_allocation_cr} Cr`}
-          icon={<Wallet className="text-blue-600" />}
-          trend="FY 2024-25 Budget"
-          trendColor="text-slate-500"
-        />
-
-        {/* 2. Fund Utilized */}
-        <KPICard
-          title="Fund Utilized"
-          value={`₹ ${officerData.total_utilized_cr} Cr`}
-          icon={<TrendingUp className="text-green-600" />}
-          trend="70.6% Utilization Rate"
-          trendColor="text-green-600"
-        />
-
-        {/* 3. NEW: Remaining Balance */}
-        <KPICard
-          title="Remaining State Fund"
-          value={`₹ ${remainingBalance} Cr`}
-          icon={<Landmark className="text-purple-600" />}
-          trend="Available for Disbursement"
-          trendColor="text-purple-600"
-        />
-
-        {/* 4. Beneficiaries */}
-        <KPICard
+      {/* ---------------- SUMMARY CARDS ---------------- */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        <SummaryCard
           title="Total Beneficiaries"
-          value="5,050"
-          icon={<Users className="text-orange-600" />}
-          trend="+540 this month"
-          trendColor="text-green-600"
+          value={stateSummary.totalBeneficiaries}
+          icon={<Users className="text-orange-500" />}
         />
-      </div>
 
-      {/* --- MAIN CHARTS SECTION --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <SummaryCard
+          title="Applications Received"
+          value={stateSummary.totalApplications}
+          icon={<BarChart3 className="text-blue-600" />}
+        />
 
-        {/* Chart 1: Top 5 Districts by Fund */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-slate-800">Top 5 Districts: Fund Utilization</h3>
-            <span className="text-xs font-medium px-2 py-1 bg-indigo-50 text-indigo-700 rounded-full">High Performance</span>
-          </div>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={top5Districts} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="district" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                />
-                <Legend />
-                <Bar dataKey="allocation" fill="#6366f1" name="Allocated (Lakhs)" radius={[4, 4, 0, 0]} barSize={30} />
-                <Bar dataKey="utilized" fill="#10b981" name="Utilized (Lakhs)" radius={[4, 4, 0, 0]} barSize={30} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        <SummaryCard
+          title="Approved at State"
+          value={stateSummary.approved}
+          icon={<TrendingUp className="text-green-600" />}
+        />
+
+        <SummaryCard
+          title="Pending Verification"
+          value={stateSummary.pendingVerification}
+          icon={<Building2 className="text-purple-600" />}
+        />
+      </section>
+
+      {/* ---------------- AI INSIGHTS ---------------- */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Activity className="text-indigo-600" /> State AI Insights
+        </h2>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {defaultInsights.map((ins, i) => (
+            <InsightCard key={i} msg={ins.msg} trend={ins.trend} />
+          ))}
+        </div>
+      </section>
+
+      {/* ---------------- INTERACTIVE LAYOUT ---------------- */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* ---------------- DONUT PIE CHART ---------------- */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border relative">
+          <h3 className="text-lg font-semibold mb-4">Scheme Distribution</h3>
+
+          <ResponsiveContainer width="100%" height={260}>
+            <PieChart>
+              <Pie
+                data={schemeBreakdown}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={90}
+                paddingAngle={3}
+                label={({ value }) =>
+                  `${((value / totalSchemes) * 100).toFixed(1)}%`
+                }
+              >
+                {schemeBreakdown.map((e, i) => (
+                  <Cell key={i} fill={COLORS[i]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
 
-        {/* Chart 2: Top 5 Districts by Beneficiaries */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-slate-800">Top 5 Districts: Beneficiary Count</h3>
-            <span className="text-xs font-medium px-2 py-1 bg-orange-50 text-orange-700 rounded-full">By Volume</span>
-          </div>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={top5Districts} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorBen" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="district" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <Tooltip />
-                <Area type="monotone" dataKey="beneficiaries" stroke="#f59e0b" fillOpacity={1} fill="url(#colorBen)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+        {/* ---------------- ACTIVITY FEED ---------------- */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border lg:col-span-2">
+          <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
+
+          <ul className="space-y-4">
+            {activityFeed.map((a, i) => (
+              <li
+                key={i}
+                className="p-4 bg-slate-100 rounded-lg flex justify-between items-start"
+              >
+                <p className="font-medium text-slate-700">{a.event}</p>
+                <span className="text-xs text-slate-500">{a.time}</span>
+              </li>
+            ))}
+          </ul>
         </div>
+      </section>
+
+      {/* ---------------- BAR CHART ---------------- */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border mt-8">
+        <h3 className="text-lg font-semibold mb-4">Monthly Applications Trend</h3>
+
+        <ResponsiveContainer width="100%" height={260}>
+          <BarChart
+            data={[
+              { month: "Jan", value: 480 },
+              { month: "Feb", value: 610 },
+              { month: "Mar", value: 580 },
+              { month: "Apr", value: 720 },
+              { month: "May", value: 690 },
+              { month: "Jun", value: 770 },
+            ]}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="month" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey="value" fill="#4f46e5" radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
+      {/* ---------------- LINE CHART ---------------- */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border mt-8">
+        <h3 className="text-lg font-semibold mb-4">Fund Utilization Trend</h3>
 
+        <ResponsiveContainer width="100%" height={260}>
+          <LineChart
+            data={[
+              { month: "Jan", utilization: 10 },
+              { month: "Feb", utilization: 13 },
+              { month: "Mar", utilization: 15 },
+              { month: "Apr", utilization: 17 },
+              { month: "May", utilization: 19 },
+              { month: "Jun", utilization: stateSummary.fundsUtilizedCr },
+            ]}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="month" />
+            <YAxis unit=" Cr" />
+            <Tooltip />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey="utilization"
+              stroke="#00a851"
+              strokeWidth={3}
+              dot={{ r: 4 }}
+              activeDot={{ r: 6 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };
 
-// Helper Component for KPI Cards
-const KPICard = ({ title, value, icon, trend, trendColor }) => (
-  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-    <div className="flex justify-between items-start mb-4">
+/* ---------------- COMPONENTS ---------------- */
+const SummaryCard = ({ title, value, icon }) => (
+  <div className="bg-white p-6 rounded-xl border shadow-sm hover:shadow-md transition">
+    <div className="flex justify-between">
       <div>
-        <p className="text-slate-500 text-sm font-medium">{title}</p>
-        <h3 className="text-2xl font-bold text-slate-900 mt-1">{value}</h3>
+        <p className="text-sm text-slate-500">{title}</p>
+        <h3 className="text-3xl font-bold text-slate-900 mt-2">{value}</h3>
       </div>
-      <div className="p-2 bg-slate-100 rounded-lg">
-        {icon}
-      </div>
+      <div className="p-3 bg-slate-100 rounded-xl">{icon}</div>
     </div>
-    <p className={`text-xs font-medium ${trendColor}`}>{trend}</p>
   </div>
 );
+
+const InsightCard = ({ msg, trend }) => {
+  const color =
+    trend === "positive"
+      ? "text-green-600"
+      : trend === "negative"
+        ? "text-red-600"
+        : "text-blue-600";
+
+  const Icon =
+    trend === "positive"
+      ? ArrowUpRight
+      : trend === "negative"
+        ? ArrowDownRight
+        : Activity;
+
+  return (
+    <div className="p-4 bg-white border rounded-xl shadow-sm flex gap-3 items-start hover:shadow-md transition">
+      <Icon className={`${color} mt-1`} />
+      <p className="text-slate-700 text-sm font-medium">{msg}</p>
+    </div>
+  );
+};
 
 export default StateDashboard;

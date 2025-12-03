@@ -63,7 +63,7 @@ export const applyForScheme = async (req, res) => {
                 domicile_certificate: uploads.domicile,
                 caste_certificate: uploads.caste,
             },
-            status: "SUBMITTED"
+            status: "UNDER_VERIFICATION"
         });
 
         // 7. Link this Application to Beneficiary

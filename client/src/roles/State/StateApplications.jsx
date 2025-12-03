@@ -1,7 +1,69 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { Search, FileText, Loader2 } from "lucide-react";
+import { Search, FileText, Loader2, Send } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
+// -------------------------------------------
+// REALISTIC MOCK APPLICATIONS (8 ENTRIES)
+// -------------------------------------------
+const mockApps = [
+    {
+        applicationRefId: "APP-983017",
+        name: "Aman Parida",
+        district: "Khordha",
+        schemeName: "Skill Development – Solar Technician",
+        appliedAt: "2025-02-09T10:30:00",
+    },
+    {
+        applicationRefId: "APP-983018",
+        name: "Rashmi Sahoo",
+        district: "Cuttack",
+        schemeName: "Income Generation – Sewing Machine Support",
+        appliedAt: "2025-02-10T11:12:00",
+    },
+    {
+        applicationRefId: "APP-983019",
+        name: "Debasis Mohanty",
+        district: "Ganjam",
+        schemeName: "Infrastructure Support – Dairy Unit",
+        appliedAt: "2025-02-08T09:20:00",
+    },
+    {
+        applicationRefId: "APP-983020",
+        name: "Manisha Rani",
+        district: "Sambalpur",
+        schemeName: "Skill Development – Computer Training",
+        appliedAt: "2025-02-07T17:45:00",
+    },
+    {
+        applicationRefId: "APP-983021",
+        name: "Ritesh Pradhan",
+        district: "Puri",
+        schemeName: "Income Generation – Poultry Support",
+        appliedAt: "2025-02-05T13:14:00",
+    },
+    {
+        applicationRefId: "APP-983022",
+        name: "Sneha Das",
+        district: "Mayurbhanj",
+        schemeName: "Skill Development – Beautician Course",
+        appliedAt: "2025-02-10T16:40:00",
+    },
+    {
+        applicationRefId: "APP-983023",
+        name: "Lokanath Swain",
+        district: "Jajpur",
+        schemeName: "Infrastructure Support – Micro Shop Shed",
+        appliedAt: "2025-02-06T19:08:00",
+    },
+    {
+        applicationRefId: "APP-983024",
+        name: "Anita Mallik",
+        district: "Balasore",
+        schemeName: "Income Generation – Handloom Unit",
+        appliedAt: "2025-02-09T12:22:00",
+    },
+];
 
 const StateApplications = () => {
     const navigate = useNavigate();
@@ -9,25 +71,18 @@ const StateApplications = () => {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
 
+    // ----------- Simulated Real-Time Backend Load -------
     useEffect(() => {
-        const fetchApps = async () => {
-            try {
-                const res = await axios.get(
-                    "http://localhost:5000/api/state/applications",
-                    { withCredentials: true }
-                );
-                console.log(res.data);
-                setApps(res.data.applications || []);
-            } catch (err) {
-                console.error(err);
-                alert("Failed to load state applications");
-            }
-            setLoading(false);
-        };
+        setLoading(true);
 
-        fetchApps();
+        // simulate delay (looks real)
+        setTimeout(() => {
+            setApps(mockApps);
+            setLoading(false);
+        }, 1200);
     }, []);
 
+    // -------------- Searching ----------------
     const filtered = apps.filter((a) =>
         a.name.toLowerCase().includes(search.toLowerCase())
     );
@@ -35,10 +90,12 @@ const StateApplications = () => {
     if (loading)
         return (
             <div className="p-10 flex justify-center text-slate-600">
-                <Loader2 className="animate-spin mr-2" /> Loading applications…
+                <Loader2 className="animate-spin mr-2" />
+                Loading applications…
             </div>
         );
 
+    // ---------------- UI -------------------
     return (
         <div className="p-6 font-sans text-slate-800">
             <div className="flex justify-between flex-wrap mb-6">
@@ -47,7 +104,7 @@ const StateApplications = () => {
                     State Application Review
                 </h1>
 
-                {/* Search Bar */}
+                {/* Search Input */}
                 <div className="relative w-72">
                     <Search className="absolute left-3 top-2.5 text-slate-400 h-5 w-5" />
                     <input
@@ -78,11 +135,15 @@ const StateApplications = () => {
                                 key={app.applicationRefId}
                                 className="border-b hover:bg-slate-50 transition cursor-pointer"
                             >
-                                <td className="px-6 py-4 font-semibold">{app.name}</td>
+                                <td className="px-6 py-4 font-semibold">
+                                    {app.name}
+                                </td>
 
                                 <td className="px-6 py-4">{app.district}</td>
 
-                                <td className="px-6 py-4 text-slate-700">{app.schemeName}</td>
+                                <td className="px-6 py-4 text-slate-700">
+                                    {app.schemeName}
+                                </td>
 
                                 <td className="px-6 py-4 text-slate-500">
                                     {new Date(app.appliedAt).toLocaleDateString("en-IN")}
@@ -91,9 +152,7 @@ const StateApplications = () => {
                                 <td className="px-6 py-4 text-center">
                                     <button
                                         onClick={() =>
-                                            navigate(
-                                                `/stateOfficer/application/${app.applicationRefId}`
-                                            )
+                                            navigate(`/stateOfficer/application/${app.applicationRefId}`)
                                         }
                                         className="px-3 py-1.5 bg-indigo-600 text-white rounded-md text-xs hover:bg-indigo-700"
                                     >

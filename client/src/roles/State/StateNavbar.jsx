@@ -13,12 +13,37 @@ import {
   FileCheck as IDIcon, // Renamed to avoid conflict
   X
 } from 'lucide-react';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 const user = JSON.parse(localStorage.getItem("sujhaa-user"));
 
 const StateNavbar = ({ onMenuClick }) => {
+  const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // For the small menu
   const [isModalOpen, setIsModalOpen] = useState(false);       // For the big profile popup
+
+
+  const handleLogout = async () => {
+    try {
+      const res = await axios.get(
+        "http://localhost:5000/api/auth/logout",
+        {},
+        { withCredentials: true }
+      );
+
+      toast.success(res.data.message || "Logged out successfully");
+
+      localStorage.removeItem("sujhaa-state-dashboard");
+      localStorage.removeItem("sujhaa-user");
+
+      navigate("/login");
+    } catch (err) {
+      console.log(err);
+      toast.error("Logout failed");
+    }
+  };
 
   // 1. Mock Data for State Officer
   const officerData = {
@@ -105,9 +130,12 @@ const StateNavbar = ({ onMenuClick }) => {
 
                 <div className="border-t border-gray-100 my-1"></div>
 
-                <a href="#" className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                  <LogOut size={16} className="mr-2" /> Sign out
-                </a>
+                <button
+                  onClick={handleLogout}
+                  className="cursor-pointer flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                >
+                  <LogOut size={16} className="mr-2" /> Log out
+                </button>
               </div>
             )}
           </div>

@@ -1,7 +1,4 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
-
+import React, { useEffect, useState } from "react";
 import {
   ArrowLeft,
   User,
@@ -12,140 +9,102 @@ import {
   XCircle,
   ShieldCheck,
   File,
-  FileCheck,
-  FileTextIcon,
   Image as ImageIcon,
-  FileArchive,
   IdCard,
   Calendar,
+  TrendingUp
 } from "lucide-react";
+
+import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+// ---------------------------------------------------
+// FAKE API CALL FOR BENEFICIARY DETAILS
+// ---------------------------------------------------
+function fetchMockApplication(id) {
+  return new Promise((resolve) => {
+    console.log("📡 Fetching application details for", id);
+    setTimeout(() => {
+      resolve({
+        name: "Aman Parida",
+        digitalId: "SUJHAA-10045",
+        aadhaarNumber: "4876 9932 1120",
+        category: "SC",
+        phone: "9876543210",
+        email: "amanparida990@gmail.com",
+        address: "Plot 22, Rasulgarh, Bhubaneswar, Khordha, Odisha",
+
+        schemeName: "Income Generation Project – Mushroom Cultivation",
+        schemeCategory: "Income Generation",
+        schemeDescription:
+          "Financial support for setting up mushroom cultivation unit including shed, composting unit, and starter kits.",
+        appliedAt: "2025-01-11T10:03:11",
+
+        fieldOfficerVerification: {
+          officerName: "FO Khordha – Aman Kumar",
+          verifiedOn: "2025-01-15T09:22:10",
+          remarks: "House location verified. Beneficiary present.",
+          locationMatch: "Matched within 32 meters",
+        },
+
+        documents: [
+          { name: "Income Certificate", url: "https://via.placeholder.com/400" },
+          { name: "Caste Certificate", url: "https://via.placeholder.com/400" },
+          { name: "Domicile Certificate", url: "https://via.placeholder.com/400" },
+        ],
+
+        fundingEligibility: 78, // %
+      });
+    }, 1400);
+  });
+}
+
+// ---------------------------------------------------
+// MAIN COMPONENT
+// ---------------------------------------------------
 const DistrictBeneficiaryForm = () => {
-  const { id } = useParams(); // APP-830953
+  const { id } = useParams();
   const navigate = useNavigate();
+
   const [data, setData] = useState(null);
+  const [showApprove, setShowApprove] = useState(false);
+  const [showReject, setShowReject] = useState(false);
+  const [loadingAction, setLoadingAction] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
 
-  const [loadingApprove, setLoadingApprove] = useState(false);
-  const [loadingReject, setLoadingReject] = useState(false);
-
-  /* ICON SELECTOR BASED ON DOCUMENT NAME */
-  const getDocIcon = (name) => {
-    const lower = name.toLowerCase();
-    if (lower.includes("income")) return <FileTextIcon className="text-green-700" size={18} />;
-    if (lower.includes("domicile")) return <FileArchive className="text-blue-600" size={18} />;
-    if (lower.includes("caste")) return <FileCheck className="text-purple-600" size={18} />;
-    if (lower.includes("aadhaar")) return <ImageIcon className="text-orange-600" size={18} />;
-    return <File className="text-gray-600" size={18} />;
-  };
-
-  /* ============================================
-      FETCH DATA FROM BACKEND
-  ============================================ */
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await axios.get(
-          `http://localhost:5000/api/district/application/${id}`,
-          { withCredentials: true }
-        );
-
-        setData({
-          /* Beneficiary */
-          name: res.data.beneficiary.name,
-          digitalId: res.data.beneficiary.digitalId,
-          aadhaarNumber: res.data.beneficiary.aadhaarNumber,
-          category: res.data.beneficiary.category || "SC",
-          phone: res.data.beneficiary.phone,
-          email: res.data.beneficiary.email,
-          address: res.data.beneficiary.address,
-
-          /* Application */
-          applicationId: res.data.application.applicationId,
-          appliedAt: res.data.application.appliedAt,
-          schemeName: res.data.application.schemeName,
-          schemeCategory: res.data.application.schemeCategory,
-          schemeDescription: res.data.application.schemeDescription,
-          status: res.data.application.status,
-          fieldOfficerVerification: res.data.application.fieldOfficerVerification,
-
-          /* Documents (Array of {name,url}) */
-          documents: res.data.application.documents || [],
-        });
-      } catch (err) {
-        console.error(err);
-        alert("Failed to load application details");
-      }
-    };
-
-    fetchData();
+    fetchMockApplication(id).then((res) => setData(res));
   }, [id]);
-
-  /* ============================================
-      APPROVE FUNCTION
-  ============================================ */
-  const handleApprove = async () => {
-    if (!window.confirm("Are you sure you want to approve this application?")) return;
-
-    try {
-      setLoadingApprove(true);
-
-      const res = await axios.post(
-        `http://localhost:5000/api/district/application/${id}/approve`,
-        { comments: "Approved by District Officer" },
-        { withCredentials: true }
-      );
-      console.log(res.data);
-      toast.success(res.data.message || "Application Approved Successfully!");
-      navigate("/districtOfficer/dashboard");
-    } catch (err) {
-      console.error(err);
-      toast.error("Approval failed!");
-    } finally {
-      setLoadingApprove(false);
-    }
-  };
-
-  /* ============================================
-      REJECT FUNCTION
-  ============================================ */
-  const handleReject = async () => {
-    const reason = prompt("Enter rejection reason:");
-
-    if (!reason) return toast.info("Rejection reason required!");
-
-    try {
-      setLoadingReject(true);
-
-      const res = await axios.post(
-        `http://localhost:5000/api/district/application/${id}/reject`,
-        { reason },
-        { withCredentials: true }
-      );
-
-      toast.success("Application Rejected Successfully!");
-      navigate("/districtOfficer/dashboard");
-    } catch (err) {
-      console.error(err);
-      toast.error("Rejection failed!");
-    } finally {
-      setLoadingReject(false);
-    }
-  };
 
   if (!data)
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <div className="h-8 w-8 animate-spin border-4 border-green-600 border-t-transparent rounded-full mx-auto"></div>
-          <p className="text-gray-500 mt-3">Loading Application...</p>
+          <p className="text-gray-500 mt-3">Loading Application Details...</p>
         </div>
       </div>
     );
 
-  /* ============================================
-      UI
-  ============================================ */
+  // ---------------------------------------------------
+  // HANDLERS
+  // ---------------------------------------------------
+  const handleApprove = () => {
+    setLoadingAction(true);
+    setTimeout(() => {
+      toast.success("Application Approved Successfully!");
+      navigate("/districtOfficer/dashboard");
+    }, 1500);
+  };
+
+  const handleRejectSubmit = () => {
+    if (!rejectReason.trim()) return alert("Please enter a reason");
+    setLoadingAction(true);
+    setTimeout(() => {
+      toast.message("Application Rejected");
+      navigate("/districtOfficer/dashboard");
+    }, 1500);
+  };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -161,10 +120,10 @@ const DistrictBeneficiaryForm = () => {
       <div className="max-w-5xl mx-auto bg-white shadow border rounded-xl">
 
         {/* HEADER */}
-        <div className="bg-[#00a851] p-6 text-white flex justify-between items-center">
+        <div className="bg-[#1A7431] p-6 text-white flex justify-between items-center">
           <div>
             <p className="flex items-center gap-2 opacity-90 mb-1">
-              <ShieldCheck size={18} /> Verified Application
+              <ShieldCheck size={18} /> Field Verified Application
             </p>
             <h1 className="text-2xl font-bold">{data.name}</h1>
 
@@ -176,101 +135,225 @@ const DistrictBeneficiaryForm = () => {
           <User size={40} className="text-white bg-white/20 p-2 rounded-full" />
         </div>
 
-        {/* CONTENT */}
+        {/* BODY */}
         <div className="p-8 space-y-10">
-
           {/* PERSONAL DETAILS */}
-          <section>
-            <h3 className="text-lg font-bold border-b pb-2 mb-4 flex items-center gap-2">
-              <User size={18} /> Personal Details
-            </h3>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <Info label="Full Name" value={data.name} />
-              <Info label="Aadhaar Number" value={data.aadhaarNumber} />
-              <Info label="Category" value={data.category} />
-              <Info label="Email ID" value={data.email} icon={<Mail size={14} />} />
-
-              <div className="md:col-span-2">
-                <Info label="Address" value={data.address} icon={<MapPin size={14} />} />
-              </div>
-            </div>
-          </section>
+          <Section title="Personal Details" Icon={User}>
+            <Info label="Full Name" value={data.name} />
+            <Info label="Aadhaar Number" value={data.aadhaarNumber} />
+            <Info label="Category" value={data.category} />
+            <Info label="Email ID" value={data.email} Icon={<Mail size={14} />} />
+            <Info
+              label="Address"
+              value={data.address}
+              Icon={<MapPin size={14} />}
+              full
+            />
+          </Section>
 
           {/* APPLICATION INFO */}
-          <section>
-            <h3 className="text-lg font-bold border-b pb-2 mb-4 flex items-center gap-2">
-              <FileText size={18} /> Application Info
-            </h3>
+          <Section title="Application Details" Icon={FileText}>
+            <Info label="Scheme Name" value={data.schemeName} full />
+            <Info
+              label="Scheme Category"
+              value={data.schemeCategory}
+              full
+            />
+            <Info
+              label="Applied On"
+              value={new Date(data.appliedAt).toLocaleString()}
+              Icon={<Calendar size={14} />}
+              full
+            />
 
-            <div className="grid md:grid-cols-2 gap-6">
-              <Info label="Application ID" value={data.applicationId} />
-              <Info label="Applied At" value={new Date(data.appliedAt).toLocaleString()} icon={<Calendar size={14} />} />
-              <Info label="Scheme Category" value={data.schemeCategory} />
+            <p className="text-gray-700 mt-3">{data.schemeDescription}</p>
+          </Section>
+
+          {/* FIELD OFFICER */}
+          <Section title="Field Officer Verification" Icon={ShieldCheck}>
+            <Info
+              label="Verified By"
+              value={data.fieldOfficerVerification.officerName}
+            />
+            <Info
+              label="Verified On"
+              value={new Date(
+                data.fieldOfficerVerification.verifiedOn
+              ).toLocaleString()}
+            />
+            <Info
+              label="Remarks"
+              value={data.fieldOfficerVerification.remarks}
+              full
+            />
+            <Info
+              label="Location Match"
+              value={data.fieldOfficerVerification.locationMatch}
+              full
+            />
+          </Section>
+
+          {/* FUNDING PROBABILITY */}
+          <Section title="Funding Eligibility Score" Icon={TrendingUp}>
+            <div className="w-full bg-gray-200 rounded-full h-4">
+              <div
+                className="h-4 bg-[#1A7431] rounded-full"
+                style={{ width: `${data.fundingEligibility}%` }}
+              ></div>
             </div>
-
-            <p className="mt-3 text-gray-700">{data.schemeDescription}</p>
-
-            <p className="mt-2 font-medium">
-              Field Officer Verified:{" "}
-              <span className="text-green-600">Yes</span>
+            <p className="text-sm mt-2 text-gray-700">
+              {data.fundingEligibility}% match with GIA guidelines
             </p>
-          </section>
+          </Section>
 
           {/* DOCUMENTS */}
-          <section>
-            <h3 className="text-lg font-bold border-b pb-2 mb-4 flex items-center gap-2">
-              <FileText size={18} /> Documents Uploaded
-            </h3>
-
-            <div className="flex flex-col gap-3">
-              {data.documents.map((doc, index) => (
+          <Section title="Uploaded Documents" Icon={File}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {data.documents.map((doc, idx) => (
                 <a
-                  key={index}
+                  key={idx}
                   href={doc.url}
                   target="_blank"
+                  rel="noreferrer"
                   className="flex items-center gap-3 bg-gray-100 px-4 py-3 rounded-lg border hover:bg-gray-200 transition"
                 >
-                  {getDocIcon(doc.name)}
+                  <ImageIcon className="text-orange-600" size={20} />
                   <span className="font-medium">{doc.name}</span>
                 </a>
               ))}
             </div>
-          </section>
+          </Section>
 
           {/* ACTION BUTTONS */}
           <div className="flex justify-end gap-4 border-t pt-6">
             <button
-              onClick={handleReject}
-              disabled={loadingReject}
+              onClick={() => setShowReject(true)}
               className="cursor-pointer px-6 py-3 border border-red-300 text-red-600 rounded-lg hover:bg-red-50"
             >
               <XCircle size={18} className="inline-block mr-2" />
-              {loadingReject ? "Rejecting..." : "Reject Application"}
+              Reject
             </button>
 
             <button
-              onClick={handleApprove}
-              disabled={loadingApprove}
-              className="cursor-pointer px-6 py-3 bg-[#00a851] text-white rounded-lg hover:bg-green-700"
+              onClick={() => setShowApprove(true)}
+              className="cursor-pointer px-6 py-3 bg-[#1A7431] text-white rounded-lg hover:bg-green-700"
             >
               <CheckCircle size={18} className="inline-block mr-2" />
-              {loadingApprove ? "Approving..." : "Approve Application"}
+              Approve
             </button>
           </div>
         </div>
       </div>
+
+      {/* MODALS */}
+      {showApprove && (
+        <ApproveModal
+          onClose={() => setShowApprove(false)}
+          onApprove={handleApprove}
+          loading={loadingAction}
+        />
+      )}
+
+      {showReject && (
+        <RejectModal
+          onClose={() => setShowReject(false)}
+          onSubmit={handleRejectSubmit}
+          loading={loadingAction}
+          rejectReason={rejectReason}
+          setRejectReason={setRejectReason}
+        />
+      )}
     </div>
   );
 };
 
-/* Small component for readable UI */
-const Info = ({ label, value, icon }) => (
-  <div>
+// ---------------------------------------------------
+// SUBCOMPONENTS
+// ---------------------------------------------------
+
+const Section = ({ title, Icon, children }) => (
+  <section>
+    <h3 className="text-lg font-bold border-b pb-2 mb-4 flex items-center gap-2">
+      <Icon size={18} /> {title}
+    </h3>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{children}</div>
+  </section>
+);
+
+const Info = ({ label, value, Icon, full }) => (
+  <div className={`${full ? "md:col-span-2" : ""}`}>
     <p className="text-xs text-gray-500 uppercase font-bold">{label}</p>
     <p className="text-gray-800 font-medium flex items-center gap-2">
-      {icon} {value}
+      {Icon} {value}
     </p>
+  </div>
+);
+
+// MODALS
+
+const ApproveModal = ({ onClose, onApprove, loading }) => (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-xl shadow-xl w-96 border">
+      <h2 className="text-xl font-bold text-[#1A7431] mb-3">Approve Application</h2>
+      <p className="text-gray-600 mb-4">
+        Are you sure you want to approve this application?
+      </p>
+
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 border rounded-lg hover:bg-gray-100"
+        >
+          Cancel
+        </button>
+
+        <button
+          disabled={loading}
+          onClick={onApprove}
+          className="px-5 py-2 bg-[#1A7431] text-white rounded-lg hover:bg-green-700"
+        >
+          {loading ? "Processing..." : "Approve"}
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+const RejectModal = ({
+  onClose,
+  onSubmit,
+  loading,
+  rejectReason,
+  setRejectReason,
+}) => (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-xl shadow-xl w-96 border">
+      <h2 className="text-xl font-bold text-red-600 mb-3">Reject Application</h2>
+
+      <textarea
+        className="w-full border p-3 rounded-lg h-28"
+        placeholder="Enter rejection reason..."
+        value={rejectReason}
+        onChange={(e) => setRejectReason(e.target.value)}
+      />
+
+      <div className="flex justify-end gap-3 mt-4">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 border rounded-lg hover:bg-gray-100"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={onSubmit}
+          disabled={loading}
+          className="px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+        >
+          {loading ? "Processing..." : "Reject"}
+        </button>
+      </div>
+    </div>
   </div>
 );
 

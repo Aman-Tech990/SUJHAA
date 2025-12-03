@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-    Download,
-    Calendar,
     IndianRupee,
     Users,
     TrendingUp,
     PieChart as PieIcon,
+    Activity
 } from "lucide-react";
 
 import {
@@ -30,12 +29,8 @@ const ProjectProgress = () => {
     const [selectedYear, setSelectedYear] = useState("2024-2025");
     const [selectedMonth, setSelectedMonth] = useState("Dec");
 
-    // --------------------------------------------
-    // YEAR-WISE DYNAMIC DATASETS
-    // --------------------------------------------
-    const dataByYear = {
-
-        // CURRENT YEAR – Highest activity
+    // ---------- BASE DATA ----------
+    const dataByYearBase = {
         "2024-2025": [
             { month: "Apr", allocated: 6.0, utilized: 4.1, verified: 45, approved: 35, rejected: 10, growth: 15, training: 25 },
             { month: "May", allocated: 6.0, utilized: 4.6, verified: 52, approved: 40, rejected: 12, growth: 17, training: 28 },
@@ -47,8 +42,7 @@ const ProjectProgress = () => {
             { month: "Nov", allocated: 7.0, utilized: 6.4, verified: 96, approved: 76, rejected: 20, growth: 25, training: 52 },
             { month: "Dec", allocated: 7.0, utilized: 3.2, verified: 40, approved: 32, rejected: 8, growth: 12, training: 22 },
         ],
-
-        // MASS ROLLOUT YEAR
+        // → other years unchanged...
         "2023-2024": [
             { month: "Apr", allocated: 5.0, utilized: 3.4, verified: 28, approved: 20, rejected: 8, growth: 10, training: 12 },
             { month: "May", allocated: 5.0, utilized: 3.8, verified: 34, approved: 27, rejected: 7, growth: 11, training: 15 },
@@ -60,8 +54,6 @@ const ProjectProgress = () => {
             { month: "Nov", allocated: 6.0, utilized: 5.3, verified: 72, approved: 55, rejected: 17, growth: 17, training: 33 },
             { month: "Dec", allocated: 6.0, utilized: 2.4, verified: 28, approved: 20, rejected: 8, growth: 8, training: 10 },
         ],
-
-        // EXPANSION YEAR
         "2022-2023": [
             { month: "Apr", allocated: 3.5, utilized: 1.9, verified: 15, approved: 10, rejected: 5, growth: 5, training: 4 },
             { month: "May", allocated: 3.5, utilized: 2.2, verified: 20, approved: 15, rejected: 5, growth: 6, training: 6 },
@@ -73,8 +65,6 @@ const ProjectProgress = () => {
             { month: "Nov", allocated: 4.2, utilized: 3.8, verified: 48, approved: 36, rejected: 12, growth: 12, training: 19 },
             { month: "Dec", allocated: 4.2, utilized: 1.7, verified: 18, approved: 12, rejected: 6, growth: 6, training: 7 },
         ],
-
-        // LAUNCH YEAR – LOWEST VALUES
         "2021-2022": [
             { month: "Apr", allocated: 2.0, utilized: 0.6, verified: 4, approved: 3, rejected: 1, growth: 2, training: 1 },
             { month: "May", allocated: 2.0, utilized: 0.8, verified: 6, approved: 4, rejected: 2, growth: 3, training: 1 },
@@ -88,16 +78,50 @@ const ProjectProgress = () => {
         ]
     };
 
-    // DYNAMIC DATA BASED ON YEAR
+    // LIVE STATE
+    const [dataByYear, setDataByYear] = useState(dataByYearBase);
+
+    // ⭐ NEW: LIVE INSIGHTS
+    const [insights, setInsights] = useState({
+        utilizationChange: 0,
+        verifiedChange: 0,
+        approvalChange: 0,
+        trainingChange: 0,
+    });
+
+    // ---------- LIVE UPDATE ENGINE ----------
+    useEffect(() => {
+        const interval = setInterval(() => {
+            // Update Graph Data
+            setDataByYear(prev => {
+                const updated = { ...prev };
+                updated[selectedYear] = prev[selectedYear].map(d => ({
+                    ...d,
+                    utilized: Math.max(0, d.utilized + (Math.random() * .2 - .1)),
+                    verified: d.verified + Math.floor(Math.random() * 3),
+                    approved: d.approved + Math.floor(Math.random() * 2),
+                    rejected: d.rejected + (Math.random() > 0.9 ? 1 : 0),
+                    growth: Math.max(0, d.growth + (Math.random() * 1 - 0.5)),
+                    training: d.training + Math.floor(Math.random() * 2),
+                }));
+                return updated;
+            });
+
+            // Update Live Insights
+            setInsights({
+                utilizationChange: (Math.random() * 2).toFixed(1),
+                verifiedChange: Math.floor(Math.random() * 20),
+                approvalChange: (Math.random() * 3).toFixed(1),
+                trainingChange: Math.floor(Math.random() * 15)
+            });
+
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [selectedYear]);
+
+    // ---------- DYNAMIC DATA ----------
     const monthlyData = dataByYear[selectedYear];
-
-    // Update month when year changes
-    const handleYearChange = (e) => {
-        setSelectedYear(e.target.value);
-        setSelectedMonth(dataByYear[e.target.value][0].month);
-    };
-
-    // Month-specific values
     const selectedMonthData = monthlyData.find(d => d.month === selectedMonth);
 
     // KPIs
@@ -107,21 +131,17 @@ const ProjectProgress = () => {
     const remainingFunds = (totalDistrictBudget - totalUtilized).toFixed(1);
     const highestGrowth = monthlyData.reduce((max, d) => d.growth > max.growth ? d : max);
 
-    const categoryData = [
-        { name: "Skill Development", value: 40 },
-        { name: "Income Generation", value: 35 },
-        { name: "Infrastructure Support", value: 15 },
-        { name: "Livelihood Training", value: 10 },
-    ];
-
     return (
         <div className="p-6 space-y-6">
 
             {/* HEADER */}
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">
+                    <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                         MIS Report ({selectedYear})
+                        <span className="text-green-600 text-sm animate-pulse">
+                            ● Live
+                        </span>
                     </h1>
                     <p className="text-sm text-gray-500">
                         Showing insights for:{" "}
@@ -129,66 +149,59 @@ const ProjectProgress = () => {
                     </p>
                 </div>
 
-                {/* DROPDOWNS */}
+                {/* FILTERS */}
                 <div className="flex items-center gap-3 bg-white p-3 rounded-xl shadow border">
-                    <select
-                        className="border rounded-lg px-3 py-2"
-                        value={selectedYear}
-                        onChange={handleYearChange}
-                    >
+                    <select className="border rounded-lg px-3 py-2" value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
                         <option>2024-2025</option>
                         <option>2023-2024</option>
                         <option>2022-2023</option>
                         <option>2021-2022</option>
                     </select>
 
-                    <select
-                        className="border rounded-lg px-3 py-2"
-                        value={selectedMonth}
-                        onChange={(e) => setSelectedMonth(e.target.value)}
-                    >
+                    <select className="border rounded-lg px-3 py-2" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
                         {monthlyData.map((m) => (
-                            <option key={m.month} value={m.month}>
-                                {m.month}
-                            </option>
+                            <option key={m.month} value={m.month}>{m.month}</option>
                         ))}
                     </select>
-
-                    <button className="flex items-center gap-2 bg-[#00a851] px-4 py-2 text-white rounded-lg">
-                        <Download size={18} /> Export PDF
-                    </button>
                 </div>
             </div>
 
+            {/* ⭐ NEW: LIVE INSIGHTS PANEL */}
+            <LiveInsights insights={insights} />
+
             {/* KPI CARDS */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-
                 <KpiCard title="Total Utilized" value={`₹${totalUtilized}L`} color="blue" icon={<IndianRupee />} />
-
                 <KpiCard title="Remaining Funds" value={`₹${remainingFunds}L`} color="amber" icon={<PieIcon />} />
-
                 <KpiCard title="Verified Beneficiaries" value={totalVerified} color="green" icon={<Users />} />
-
-                <KpiCard title="Highest Growth" value={`${highestGrowth.month} (${highestGrowth.growth}%)`} color="purple" icon={<TrendingUp />} />
+                <KpiCard title="Highest Growth" value={`${highestGrowth.month} (${highestGrowth.growth.toFixed(1)}%)`} color="purple" icon={<TrendingUp />} />
             </div>
 
             {/* CHARTS */}
-            <ChartGrid title="Monthly Fund Utilization">
-                <BarChartGraph data={monthlyData} highlight={selectedMonth} />
-            </ChartGrid>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <ChartGrid title="Monthly Fund Utilization">
+                    <BarChartGraph data={monthlyData} highlight={selectedMonth} />
+                </ChartGrid>
 
-            <ChartGrid title="Verification Trend">
-                <VerificationChart data={monthlyData} />
-            </ChartGrid>
+                <ChartGrid title="Verification Trend">
+                    <VerificationChart data={monthlyData} />
+                </ChartGrid>
 
-            <ChartGrid title="Approval vs Rejection">
-                <ApprovalChart data={monthlyData} />
-            </ChartGrid>
+                <ChartGrid title="Approval vs Rejection">
+                    <ApprovalChart data={monthlyData} />
+                </ChartGrid>
 
-            <ChartGrid title="Scheme Categories">
-                <CategoryChart categoryData={categoryData} />
-            </ChartGrid>
+                <ChartGrid title="Scheme Categories">
+                    <CategoryChart categoryData={[
+                        { name: "Skill Development", value: 40 },
+                        { name: "Income Generation", value: 35 },
+                        { name: "Infrastructure Support", value: 15 },
+                        { name: "Livelihood Training", value: 10 },
+                    ]} />
+                </ChartGrid>
+            </div>
 
+            {/* Growth Chart */}
             <ChartGrid title="Growth Rate">
                 <GrowthChart data={monthlyData} />
             </ChartGrid>
@@ -198,17 +211,40 @@ const ProjectProgress = () => {
 };
 
 // ---------------------------------------
-// REUSABLE COMPONENTS
+// ⭐ LIVE INSIGHTS PANEL
+// ---------------------------------------
+
+const LiveInsights = ({ insights }) => (
+    <div className="bg-white border shadow rounded-xl p-4 animate-fadeIn">
+        <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+            <Activity className="text-green-600" />
+            Live Insights
+        </h2>
+
+        <ul className="space-y-1 text-sm text-gray-700">
+            <li>📈 Utilization increased by <b>{insights.utilizationChange}%</b> this cycle</li>
+            <li>👥 Verified beneficiaries grew by <b>+{insights.verifiedChange}</b></li>
+            <li>✔ Approval rate improved by <b>{insights.approvalChange}%</b></li>
+            <li>🎓 Training participation increased by <b>+{insights.trainingChange}</b></li>
+        </ul>
+
+        <p className="text-xs text-gray-400 mt-2 italic">
+            Auto-refreshing every 5 seconds…
+        </p>
+    </div>
+);
+
+// ---------------------------------------
+// REUSABLE UI
 // ---------------------------------------
 
 const KpiCard = ({ title, value, icon, color }) => (
-    <div className="bg-white p-6 rounded-xl shadow border">
+    <div className="bg-white p-6 rounded-xl shadow border hover:shadow-lg transition">
         <div className="flex justify-between items-start">
             <div>
                 <p className="text-sm text-gray-500">{title}</p>
                 <h3 className="text-2xl font-bold">{value}</h3>
             </div>
-
             <div className={`p-2 rounded-lg text-${color}-600 bg-${color}-100`}>
                 {icon}
             </div>
@@ -224,7 +260,7 @@ const ChartGrid = ({ title, children }) => (
 );
 
 // ---------------------------------------
-// CHART COMPONENTS
+// RECHARTS
 // ---------------------------------------
 
 const BarChartGraph = ({ data, highlight }) => (
@@ -236,13 +272,13 @@ const BarChartGraph = ({ data, highlight }) => (
             <Tooltip />
             <Legend />
 
-            <Bar dataKey="utilized" fill="#3b82f6" name="Utilized">
+            <Bar dataKey="utilized" fill="#3b82f6">
                 {data.map((entry, index) => (
                     <Cell key={index} fill={entry.month === highlight ? "#1d4ed8" : "#3b82f6"} />
                 ))}
             </Bar>
 
-            <Bar dataKey="allocated" fill="#d1d5db" name="Allocated" />
+            <Bar dataKey="allocated" fill="#d1d5db" />
         </BarChart>
     </ResponsiveContainer>
 );
@@ -254,7 +290,6 @@ const VerificationChart = ({ data }) => (
             <XAxis dataKey="month" />
             <YAxis />
             <Tooltip />
-
             <Area dataKey="verified" stroke="#00a851" strokeWidth={3} fillOpacity={0.4} fill="#00a851" />
         </AreaChart>
     </ResponsiveContainer>
@@ -268,7 +303,6 @@ const ApprovalChart = ({ data }) => (
             <YAxis />
             <Tooltip />
             <Legend />
-
             <Bar dataKey="approved" fill="#00a851" />
             <Bar dataKey="rejected" fill="#ef4444" />
         </BarChart>
