@@ -1,0 +1,136 @@
+{
+  "siteConfig": {
+    "title": "PM-AJAY",
+    "fullName": "Pradhan Mantri Anusuchit Jaati Abhyuday Yojana"
+  },
+  "navbar": {
+    "brandName": "SUJHAA",
+    "initiativeBy": "An Initiative By {{fullName}}",
+    "links": {
+      "about": "About",
+      "pillars": "Pillars",
+      "process": "Process",
+      "keyAreas": "Key Areas",
+      "aboutScheme": "About Scheme"
+    },
+    "buttons": {
+      "login": "Login",
+      "register": "Register",
+      "officialLogin": "Official Login"
+    }
+  },
+  "hero": {
+    "title": "Explore Schemes by Category",
+    "exploreBy": "Explore"
+  },
+  "pillars": {
+    "heading": "Key Pillars of the Scheme",
+    "subheading": "The core components driving change under PM-AJAY.",
+    "items": {
+      "income": {
+        "title": "Income Generation",
+        "description": "Supporting sustainable livelihood projects and entrepreneurial ventures."
+      },
+      "skill": {
+        "title": "Skill Development",
+        "description": "Providing market-relevant training to enhance employability among youth."
+      },
+      "infrastructure": {
+        "title": "Infrastructure",
+        "description": "Developing critical infrastructure in scheduled caste majority villages."
+      }
+    }
+  },
+  "process": {
+    "heading": "Application Process Workflow",
+    "subheading": "Simplified steps for grant-in-aid application.",
+    "labels": {
+      "step": "Step"
+    },
+    "steps": {
+      "step1": {
+        "title": "Registration",
+        "desc": "Register on the official portal with basic details."
+      },
+      "step2": {
+        "title": "Proposal",
+        "desc": "Submit project proposals according to scheme guidelines."
+      },
+      "step3": {
+        "title": "Evaluation",
+        "desc": "Committee reviews proposals for viability and impact."
+      },
+      "step4": {
+        "title": "Grant Release",
+        "desc": "Funds released in installments upon approval."
+      }
+    }
+  },
+  "categories": {
+    "heading": "Explore Schemes",
+    "subheading": "By Category",
+    "items": {
+      "skill": {
+        "title": "Skill Development & Employment",
+        "desc": "Training, job skills, support"
+      },
+      "education": {
+        "title": "Education & Learning",
+        "desc": "Smart classrooms, libraries"
+      },
+      "health": {
+        "title": "Health & Wellness",
+        "desc": "Health camps, medical equipment"
+      },
+      "social": {
+        "title": "Social Welfare & Empowerment",
+        "desc": "Community centres, support"
+      },
+      "infrastructure": {
+        "title": "Infrastructure & Community Assets",
+        "desc": "Roads, lights, community halls"
+      },
+      "livelihood": {
+        "title": "Livelihood & Entrepreneurship",
+        "desc": "Small business, income generation"
+      },
+      "agriculture": {
+        "title": "Agriculture & Rural Development",
+        "desc": "Irrigation, vermicompost, farms"
+      },
+      "wash": {
+        "title": "Water, Sanitation & Hygiene",
+        "desc": "Drinking water, toilets"
+      },
+      "hostels": {
+        "title": "Hostels & Residential Facilities",
+        "desc": "Student hostels, working women"
+      },
+      "women": {
+        "title": "Women & Youth Development",
+        "desc": "Safety, sports, self-help groups"
+      }
+    }
+  },
+  "about": {
+    "title": "About SUJHAA",
+    "description": "SUJHAA is a digital platform designed to streamline the Grant-in-Aid component of PM-AJAY.",
+    "visionTitle": "Our Vision",
+    "visionDesc": "To establish a seamless, transparent, and efficient ecosystem.",
+    "watchVideo": "Watch on YouTube"
+  },
+  "footer": {
+    "ministry": "Ministry of Social Justice and Empowerment,",
+    "govt": "Government of India.",
+    "quickLinks": "Quick Links",
+    "links": {
+      "guidelines": "Scheme Guidelines",
+      "faqs": "FAQs",
+      "contact": "Contact Us",
+      "grievance": "Grievance Redressal"
+    },
+    "noteTitle": "Important Note",
+    "noteDesc": "This is a demonstration landing page.",
+    "copyright": "All rights reserved."
+  }
+}

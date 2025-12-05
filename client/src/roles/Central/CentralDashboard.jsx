@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   BarChart,
   Bar,
@@ -19,6 +19,12 @@ import {
   Activity,
   MapPin,
   LayoutGrid,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  ClipboardList,
+  MessageCircle,
+  Send,
 } from "lucide-react";
 
 // --- CONFIGURATION & COLORS ---
@@ -138,7 +144,6 @@ const STATE_DATA_INITIAL = [
       { name: "Income Gen", value: 50, color: COLORS.income },
     ],
   },
-  // Extra states to make it closer to full coverage
   {
     id: "GJ",
     name: "Gujarat",
@@ -272,7 +277,6 @@ const STATE_DATA_INITIAL = [
   {
     id: "TG",
     name: "Telangana",
-    nameShort: "Telangana",
     utilization: 84,
     beneficiaries: 36000,
     allocated: 340,
@@ -362,19 +366,140 @@ const STATE_DATA_INITIAL = [
     ],
   },
   {
-    id: "LD",
-    name: "Lakshadweep",
-    utilization: 88,
-    beneficiaries: 2000,
-    allocated: 30,
-    utilized: 26,
+    id: "AR",
+    name: "Arunachal Pradesh",
+    utilization: 66,
+    beneficiaries: 9000,
+    allocated: 120,
+    utilized: 79,
     breakdown: [
-      { name: "Skill Dev", value: 10, color: COLORS.skill },
-      { name: "Infrastructure", value: 12, color: COLORS.infra },
-      { name: "Income Gen", value: 8, color: COLORS.income },
+      { name: "Skill Dev", value: 40, color: COLORS.skill },
+      { name: "Infrastructure", value: 45, color: COLORS.infra },
+      { name: "Income Gen", value: 35, color: COLORS.income },
+    ],
+  },
+  {
+    id: "ML",
+    name: "Meghalaya",
+    utilization: 72,
+    beneficiaries: 10000,
+    allocated: 130,
+    utilized: 94,
+    breakdown: [
+      { name: "Skill Dev", value: 45, color: COLORS.skill },
+      { name: "Infrastructure", value: 50, color: COLORS.infra },
+      { name: "Income Gen", value: 35, color: COLORS.income },
+    ],
+  },
+  {
+    id: "MZ",
+    name: "Mizoram",
+    utilization: 75,
+    beneficiaries: 8000,
+    allocated: 110,
+    utilized: 83,
+    breakdown: [
+      { name: "Skill Dev", value: 40, color: COLORS.skill },
+      { name: "Infrastructure", value: 40, color: COLORS.infra },
+      { name: "Income Gen", value: 30, color: COLORS.income },
+    ],
+  },
+  {
+    id: "SK",
+    name: "Sikkim",
+    utilization: 88,
+    beneficiaries: 5000,
+    allocated: 70,
+    utilized: 62,
+    breakdown: [
+      { name: "Skill Dev", value: 25, color: COLORS.skill },
+      { name: "Infrastructure", value: 25, color: COLORS.infra },
+      { name: "Income Gen", value: 20, color: COLORS.income },
     ],
   },
 ];
+
+// Sample district mapping (for AAP preview realism)
+const STATE_DISTRICTS = {
+  UP: ["Lucknow", "Varanasi", "Prayagraj"],
+  MH: ["Pune", "Nagpur", "Nashik"],
+  MP: ["Bhopal", "Indore", "Gwalior"],
+  BR: ["Patna", "Gaya", "Muzaffarpur"],
+  RJ: ["Jaipur", "Udaipur", "Jodhpur"],
+  TN: ["Chennai", "Coimbatore", "Madurai"],
+  KA: ["Bengaluru Urban", "Mysuru", "Belagavi"],
+  WB: ["Kolkata", "Howrah", "Darjeeling"],
+  GJ: ["Ahmedabad", "Surat", "Rajkot"],
+  OD: ["Khordha", "Ganjam", "Sambalpur"],
+  AS: ["Guwahati", "Dibrugarh", "Silchar"],
+  KL: ["Thiruvananthapuram", "Kochi", "Kozhikode"],
+  HR: ["Gurugram", "Faridabad", "Hisar"],
+  PB: ["Amritsar", "Ludhiana", "Jalandhar"],
+  UK: ["Dehradun", "Haridwar", "Nainital"],
+  HP: ["Shimla", "Kangra", "Mandi"],
+  JH: ["Ranchi", "Jamshedpur", "Dhanbad"],
+  CH: ["Raipur", "Bilaspur", "Durg"],
+  TG: ["Hyderabad", "Warangal", "Nizamabad"],
+  AP: ["Vishakhapatnam", "Guntur", "Nellore"],
+  TR: ["Agartala", "Khowai"],
+  MN: ["Imphal East", "Imphal West"],
+  NL: ["Kohima", "Dimapur"],
+  GA: ["North Goa", "South Goa"],
+  JK: ["Srinagar", "Jammu"],
+  AR: ["Itanagar", "Tawang"],
+  ML: ["Shillong", "Tura"],
+  MZ: ["Aizawl", "Lungleh"],
+  SK: ["Gangtok", "Namchi"],
+};
+
+// --- INITIAL AAP LIST (ALL STATES HAVE SAMPLE AAP + CHAT THREAD) ---
+const buildInitialAAPList = () => {
+  const splits = [
+    { incomeGen: 40, skillDev: 35, infraSupport: 25 },
+    { incomeGen: 35, skillDev: 40, infraSupport: 25 },
+    { incomeGen: 45, skillDev: 30, infraSupport: 25 },
+  ];
+
+  const years = ["2024-25", "2025-26"];
+
+  return STATE_DATA_INITIAL.map((s, idx) => {
+    const split = splits[idx % splits.length];
+    const year = years[idx % years.length];
+
+    return {
+      stateId: s.id,
+      stateName: s.name,
+      year,
+      budgetCr: Math.round(s.allocated * 0.9),
+      components: split,
+      priorityDistricts: STATE_DISTRICTS[s.id] || ["Key Aspirational Districts"],
+      prevUtilization: s.utilization,
+      status: "PENDING", // PENDING | UNDER_REVIEW | APPROVED | RETURNED
+      lastAction: "AAP received from State. Awaiting central verification.",
+      remarks: "",
+      submittedAt: new Date(
+        Date.now() - randInt(2, 15) * 24 * 60 * 60 * 1000
+      ).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }),
+      decidedAt: null,
+      // WhatsApp-style chat thread
+      messages: [
+        {
+          id: `INIT-${s.id}`,
+          sender: "STATE",
+          text: `Respected Central PM–AJAY Cell, kindly review ${s.name}'s Annual Action Plan for ${year}.`,
+          at: new Date().toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        },
+      ],
+    };
+  });
+};
 
 // --- HELPERS TO COMPUTE NATIONAL KPI FROM STATE DATA ---
 const computeKpis = (states) => {
@@ -437,6 +562,40 @@ const Card = ({ children, className = "" }) => (
     {children}
   </div>
 );
+
+// --- STATUS BADGE FOR AAP ---
+const AAPStatusBadge = ({ status }) => {
+  let text = "";
+  let cls = "";
+
+  switch (status) {
+    case "PENDING":
+      text = "Pending Review";
+      cls = "bg-amber-50 text-amber-700 border border-amber-200";
+      break;
+    case "UNDER_REVIEW":
+      text = "Under Verification";
+      cls = "bg-blue-50 text-blue-700 border border-blue-200";
+      break;
+    case "APPROVED":
+      text = "Approved";
+      cls = "bg-emerald-50 text-emerald-700 border border-emerald-200";
+      break;
+    case "RETURNED":
+      text = "Returned for Changes";
+      cls = "bg-rose-50 text-rose-700 border border-rose-200";
+      break;
+    default:
+      text = status;
+      cls = "bg-slate-50 text-slate-600 border border-slate-200";
+  }
+
+  return (
+    <span className={`px-2.5 py-1 text-xs rounded-full font-medium ${cls}`}>
+      {text}
+    </span>
+  );
+};
 
 // --- STATE HEATMAP GRID ---
 const StateHeatmapGrid = ({ states, activeStateId, onSelect }) => {
@@ -522,10 +681,10 @@ const StateInspector = ({ state }) => {
           </p>
           <p
             className={`text-2xl font-bold ${state.utilization > 80
-              ? "text-emerald-600"
-              : state.utilization > 60
-                ? "text-amber-600"
-                : "text-rose-600"
+                ? "text-emerald-600"
+                : state.utilization > 60
+                  ? "text-amber-600"
+                  : "text-rose-600"
               }`}
           >
             {state.utilization}%
@@ -682,8 +841,8 @@ const CompareStates = ({
               <span className="font-medium text-slate-700">{stateA.name}</span>
               <span
                 className={`font-bold ${stateA.utilization >= stateB.utilization
-                  ? "text-emerald-600"
-                  : "text-slate-500"
+                    ? "text-emerald-600"
+                    : "text-slate-500"
                   }`}
               >
                 {stateA.utilization}%
@@ -700,8 +859,8 @@ const CompareStates = ({
               <span className="font-medium text-slate-700">{stateB.name}</span>
               <span
                 className={`font-bold ${stateB.utilization > stateA.utilization
-                  ? "text-emerald-600"
-                  : "text-slate-500"
+                    ? "text-emerald-600"
+                    : "text-slate-500"
                   }`}
               >
                 {stateB.utilization}%
@@ -752,53 +911,59 @@ const CompareStates = ({
   );
 };
 
-const FAKE_ENDPOINTS = [
-  "/api/central/pmajay/state-summary",
-  "/api/central/pmajay/state-comparison",
-  "/api/central/pmajay/national-kpis",
-  "/api/states/application-progress",
-  "/api/states/fund-utilization",
-  "/api/states/training-centers",
-  "/api/pmajay/audit-trails",
-  "/api/pmajay/component-breakdown"
-];
+// --- VALIDATION BLOCK SUBCOMPONENT ---
+const AAPValidationBlock = ({ aap }) => {
+  const totalPercent =
+    aap.components.incomeGen +
+    aap.components.skillDev +
+    aap.components.infraSupport;
 
-const randomEndpoint = () =>
-  FAKE_ENDPOINTS[randInt(0, FAKE_ENDPOINTS.length - 1)];
+  const checks = [
+    {
+      label: "Component split sums to 100%",
+      pass: totalPercent === 100,
+    },
+    {
+      label: "Previous year utilization ≥ 60%",
+      pass: aap.prevUtilization >= 60,
+    },
+    {
+      label: "Proposed budget ≤ 120% of current GIA allocation (approx.)",
+      pass: true, // keep visually passing for demo
+    },
+  ];
 
-const user = JSON.parse(localStorage.getItem("sujhaa-user"));
+  return (
+    <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+      <p className="text-xs font-semibold text-slate-800 mb-2">
+        Automated Validation Checks
+      </p>
+      <ul className="space-y-1">
+        {checks.map((c, idx) => (
+          <li
+            key={idx}
+            className={`flex items-start gap-2 text-[11px] ${c.pass ? "text-emerald-700" : "text-rose-700"
+              }`}
+          >
+            {c.pass ? (
+              <CheckCircle size={12} className="mt-[2px]" />
+            ) : (
+              <XCircle size={12} className="mt-[2px]" />
+            )}
+            <span>{c.label}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-[10px] text-slate-400">
+        * These checks simulate rules used by Central PM–AJAY Cell during
+        scrutiny of State AAPs. Final decision rests with the approving officer.
+      </p>
+    </div>
+  );
+};
 
 // --- MAIN DASHBOARD ---
 const CentralDashboard = () => {
-  const [apiLogs, setApiLogs] = useState([]);
-  const [logCount, setLogCount] = useState(1);
-
-  // Push API log (INSIDE component)
-  const pushApiLog = (status = 200) => {
-    const timeTaken = randInt(120, 850);
-    const endpoint = randomEndpoint();
-    const ts = new Date().toLocaleTimeString("en-IN", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit"
-    });
-
-    const statusText =
-      status === 200 ? "200 OK" :
-        status === 204 ? "204 No Content" : "500 Error";
-
-    const newLog = {
-      id: logCount,
-      timestamp: ts,
-      endpoint,
-      status: statusText,
-      time: `${timeTaken}ms`,
-    };
-
-    setLogCount((n) => n + 1);
-    setApiLogs((prev) => [newLog, ...prev.slice(0, 14)]);
-  };
-
   const [stateData, setStateData] = useState(STATE_DATA_INITIAL);
   const [selectedStateId, setSelectedStateId] = useState(
     STATE_DATA_INITIAL[0].id
@@ -811,14 +976,20 @@ const CentralDashboard = () => {
 
   const selectedState = stateData.find((s) => s.id === selectedStateId);
 
+  // AAP Inbox states
+  const [aapList, setAapList] = useState(buildInitialAAPList);
+  const [activeAAP, setActiveAAP] = useState(null);
+  const [aapDetailLoading, setAapDetailLoading] = useState(false);
+  const [decisionLoading, setDecisionLoading] = useState(false);
+  const [remarksInput, setRemarksInput] = useState("");
+  const [chatInput, setChatInput] = useState("");
+
   // --- LIVE DATA SIMULATION: looks like backend API polling ---
   useEffect(() => {
     const pollInterval = setInterval(() => {
       setIsSyncing(true);
 
-      // simulate network latency like a real API
       setTimeout(() => {
-        pushApiLog();
         setStateData((prev) => {
           const updated = prev.map((s) => {
             const deltaUtil = randInt(-3, 3);
@@ -827,9 +998,7 @@ const CentralDashboard = () => {
             const deltaBenefPercent = randInt(-2, 3); // -2% to +3%
             const newBenef = Math.max(
               8000,
-              Math.round(
-                s.beneficiaries * (1 + deltaBenefPercent / 100)
-              )
+              Math.round(s.beneficiaries * (1 + deltaBenefPercent / 100))
             );
 
             const newUtilized = Math.round((s.allocated * newUtil) / 100);
@@ -847,11 +1016,161 @@ const CentralDashboard = () => {
           setIsSyncing(false);
           return updated;
         });
-      }, randInt(300, 900)); // 300–900ms fake API time
-    }, 8000); // every 8 seconds
+      }, randInt(300, 900));
+    }, 8000);
 
     return () => clearInterval(pollInterval);
   }, []);
+
+  const chatContainerRef = useRef(null);
+
+  const selectedAAP = activeAAP
+    ? aapList.find((a) => a.stateId === activeAAP.stateId)
+    : null;
+
+  // Auto-scroll chat to bottom when messages change
+  useEffect(() => {
+    if (!chatContainerRef.current) return;
+    if (!selectedAAP || !selectedAAP.messages) return;
+    chatContainerRef.current.scrollTop =
+      chatContainerRef.current.scrollHeight;
+  }, [selectedAAP?.messages?.length, activeAAP?.stateId]);
+
+  // OPEN AAP DETAIL WITH FAKE BACKEND DELAY
+  const openAAPDetail = (stateId) => {
+    const target = aapList.find((a) => a.stateId === stateId);
+    if (!target) return;
+
+    setAapDetailLoading(true);
+    setActiveAAP({ stateId });
+    setChatInput("");
+
+    setTimeout(() => {
+      setAapList((prev) =>
+        prev.map((a) =>
+          a.stateId === stateId && a.status === "PENDING"
+            ? {
+              ...a,
+              status: "UNDER_REVIEW",
+              lastAction: "Central officer opened AAP for verification.",
+            }
+            : a
+        )
+      );
+      setAapDetailLoading(false);
+    }, randInt(500, 900));
+  };
+
+  // DECISION FLOW
+  const applyDecision = (stateId, decisionStatus) => {
+    if (!selectedAAP) return;
+    const trimmedRemarks = remarksInput.trim();
+
+    setDecisionLoading(true);
+
+    setTimeout(() => {
+      const nowStr = new Date().toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      const label =
+        decisionStatus === "APPROVED"
+          ? "AAP approved for release of funds."
+          : "AAP returned to State with remarks for modification.";
+
+      setAapList((prev) =>
+        prev.map((a) =>
+          a.stateId === stateId
+            ? {
+              ...a,
+              status: decisionStatus,
+              lastAction: label,
+              decidedAt: nowStr,
+              remarks: trimmedRemarks || a.remarks,
+            }
+            : a
+        )
+      );
+
+      setDecisionLoading(false);
+      setRemarksInput("");
+    }, randInt(800, 1300));
+  };
+
+  // CHAT SEND HANDLER (CENTRAL → STATE) + AUTO REPLY
+  const handleSendMessage = (stateId) => {
+    if (!selectedAAP) return;
+    const text = chatInput.trim();
+    if (!text) return;
+
+    const timeNow = new Date().toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const centralMsg = {
+      id: `CENTRAL-${stateId}-${Date.now()}`,
+      sender: "CENTRAL",
+      text,
+      at: timeNow,
+    };
+
+    // Push central message
+    setAapList((prev) =>
+      prev.map((a) =>
+        a.stateId === stateId
+          ? {
+            ...a,
+            messages: [...(a.messages || []), centralMsg],
+            lastAction:
+              "Central sent clarification to State (notified on State dashboard).",
+          }
+          : a
+      )
+    );
+
+    setChatInput("");
+
+    // Auto State reply (simulation)
+    const autoReplies = [
+      "Noted. We will revise the AAP and re-submit.",
+      "Received. We will share district-wise breakup within 24 hours.",
+      "Thank you. We will upload UCs and progress photos shortly.",
+      "Acknowledged. Our State PM–AJAY Cell will incorporate these suggestions.",
+    ];
+
+    const replyText =
+      autoReplies[Math.floor(Math.random() * autoReplies.length)];
+
+    const delay = randInt(1500, 3000);
+
+    setTimeout(() => {
+      const replyMsg = {
+        id: `STATE-${stateId}-${Date.now()}`,
+        sender: "STATE",
+        text: replyText,
+        at: new Date().toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
+
+      setAapList((prev) =>
+        prev.map((a) =>
+          a.stateId === stateId
+            ? {
+              ...a,
+              messages: [...(a.messages || []), replyMsg],
+            }
+            : a
+        )
+      );
+    }, delay);
+  };
 
   return (
     <div className="w-full min-h-screen bg-slate-50/50 p-6 font-sans text-slate-900">
@@ -859,25 +1178,30 @@ const CentralDashboard = () => {
       <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
-            PM-AJAY Grant-in-Aid (Live MIS)
+            PM-AJAY Grant-in-Aid (Central Live MIS)
           </h1>
           <p className="text-slate-500 text-sm">
-            Monitoring Skill Development, Infrastructure & Income Generation Components
+            Monitoring State-wise Skill Development, Infrastructure & Income
+            Generation Components
           </p>
         </div>
         <div className="flex flex-col items-start md:items-end gap-1 text-xs">
           <div className="flex items-center gap-2">
             <span
               className={`inline-flex items-center gap-1 px-2 py-1 rounded-full font-medium ${isSyncing
-                ? "bg-amber-50 text-amber-700"
-                : "bg-emerald-50 text-emerald-700"
+                  ? "bg-amber-50 text-amber-700"
+                  : "bg-emerald-50 text-emerald-700"
                 }`}
             >
               <span
-                className={`w-2 h-2 rounded-full ${isSyncing ? "bg-amber-500 animate-pulse" : "bg-emerald-500"
+                className={`w-2 h-2 rounded-full ${isSyncing
+                    ? "bg-amber-500 animate-pulse"
+                    : "bg-emerald-500"
                   }`}
               ></span>
-              {isSyncing ? "Syncing with Central PM-AJAY MIS..." : "Connected · Live"}
+              {isSyncing
+                ? "Syncing with State PM-AJAY portals..."
+                : "Connected · Live Snapshot"}
             </span>
           </div>
           <span className="text-slate-400">
@@ -903,7 +1227,9 @@ const CentralDashboard = () => {
               <kpi.icon className={kpi.color} size={24} />
             </div>
             <div>
-              <p className="text-sm text-slate-500 font-medium">{kpi.title}</p>
+              <p className="text-sm text-slate-500 font-medium">
+                {kpi.title}
+              </p>
               <div className="flex items-baseline gap-1">
                 <span className="text-2xl font-bold text-slate-900">
                   {kpi.value}
@@ -925,8 +1251,8 @@ const CentralDashboard = () => {
           <Card className="flex-1">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <MapPin size={20} className="text-blue-600" /> State Performance
-                Grid
+                <MapPin size={20} className="text-blue-600" /> State
+                Performance Grid
               </h2>
               <div className="flex flex-col items-end gap-1">
                 <div className="flex gap-3 text-xs">
@@ -939,7 +1265,8 @@ const CentralDashboard = () => {
                     Medium
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-rose-500"></span> Low
+                    <span className="w-2 h-2 rounded-full bg-rose-500"></span>{" "}
+                    Low
                   </span>
                 </div>
                 <span className="text-[10px] text-slate-400">
@@ -974,13 +1301,41 @@ const CentralDashboard = () => {
                   margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                 >
                   <defs>
-                    <linearGradient id="colorSkill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={COLORS.skill} stopOpacity={0.1} />
-                      <stop offset="95%" stopColor={COLORS.skill} stopOpacity={0} />
+                    <linearGradient
+                      id="colorSkill"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor={COLORS.skill}
+                        stopOpacity={0.1}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor={COLORS.skill}
+                        stopOpacity={0}
+                      />
                     </linearGradient>
-                    <linearGradient id="colorInfra" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={COLORS.infra} stopOpacity={0.1} />
-                      <stop offset="95%" stopColor={COLORS.infra} stopOpacity={0} />
+                    <linearGradient
+                      id="colorInfra"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor={COLORS.infra}
+                        stopOpacity={0.1}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor={COLORS.infra}
+                        stopOpacity={0}
+                      />
                     </linearGradient>
                   </defs>
                   <XAxis
@@ -1047,53 +1402,388 @@ const CentralDashboard = () => {
         </div>
       </div>
 
-
-
-
-      {/* API LOG PANEL */}
+      {/* ============================
+          AAP INBOX & VERIFICATION PANEL
+      ============================ */}
       <Card className="mt-4">
-        <h2 className="text-lg font-bold text-slate-900 mb-4">
-          API Activity Logs (Simulated)
-        </h2>
-
-        <div className="max-h-[280px] overflow-y-auto pr-2 space-y-2">
-          {apiLogs.map((log) => (
-            <div
-              key={log.id}
-              className="flex items-center justify-between border border-slate-200 rounded-lg px-4 py-2 bg-slate-50 hover:bg-white transition-all animate-in fade-in duration-300"
-            >
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-slate-700">
-                  {log.endpoint}
-                </span>
-                <span className="text-xs text-slate-400">{log.timestamp}</span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span
-                  className={`text-xs px-2 py-1 rounded-full font-medium ${log.status.includes("200")
-                    ? "bg-emerald-100 text-emerald-700"
-                    : log.status.includes("204")
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-rose-100 text-rose-700"
-                    }`}
-                >
-                  {log.status}
-                </span>
-
-                <span className="text-xs text-slate-500">{log.time}</span>
-              </div>
-            </div>
-          ))}
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <ClipboardList size={18} className="text-indigo-600" />
+              Annual Action Plan Inbox – All States
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Central PM–AJAY Cell view of all AAPs submitted by States for
+              the current cycle.
+            </p>
+          </div>
+          <span className="text-[10px] text-slate-400">
+            Source: /api/central/pmajay/aap-inbox
+          </span>
         </div>
 
-        <p className="text-[10px] text-slate-400 mt-2">
-          Auto-generated logs mimicking backend PM-AJAY MIS API traffic.
-        </p>
-      </Card>
+        {/* SUMMARY STRIP */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 text-xs">
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <p className="text-[10px] text-slate-500 uppercase font-bold">
+              Total States
+            </p>
+            <p className="text-lg font-bold text-slate-900">
+              {aapList.length}
+            </p>
+          </div>
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <p className="text-[10px] text-slate-500 uppercase font-bold">
+              Pending
+            </p>
+            <p className="text-lg font-bold text-amber-700">
+              {aapList.filter((a) => a.status === "PENDING").length}
+            </p>
+          </div>
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <p className="text-[10px] text-slate-500 uppercase font-bold">
+              Under Review
+            </p>
+            <p className="text-lg font-bold text-blue-700">
+              {aapList.filter((a) => a.status === "UNDER_REVIEW").length}
+            </p>
+          </div>
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <p className="text-[10px] text-slate-500 uppercase font-bold">
+              Approved
+            </p>
+            <p className="text-lg font-bold text-emerald-700">
+              {aapList.filter((a) => a.status === "APPROVED").length}
+            </p>
+          </div>
+        </div>
 
+        {/* AAP LIST */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs md:text-sm border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="text-left p-2 md:p-3 text-slate-500 font-semibold">
+                  State
+                </th>
+                <th className="text-left p-2 md:p-3 text-slate-500 font-semibold">
+                  Year
+                </th>
+                <th className="text-left p-2 md:p-3 text-slate-500 font-semibold">
+                  Budget (₹ Cr)
+                </th>
+                <th className="text-left p-2 md:p-3 text-slate-500 font-semibold">
+                  Prev Utilization
+                </th>
+                <th className="text-left p-2 md:p-3 text-slate-500 font-semibold">
+                  Status
+                </th>
+                <th className="text-left p-2 md:p-3 text-slate-500 font-semibold">
+                  Last Action
+                </th>
+                <th className="text-right p-2 md:p-3 text-slate-500 font-semibold">
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {aapList.map((a) => (
+                <tr
+                  key={a.stateId}
+                  className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${activeAAP && activeAAP.stateId === a.stateId
+                      ? "bg-indigo-50/40"
+                      : ""
+                    }`}
+                >
+                  <td className="p-2 md:p-3 font-medium text-slate-800">
+                    {a.stateName}
+                  </td>
+                  <td className="p-2 md:p-3 text-slate-600">{a.year}</td>
+                  <td className="p-2 md:p-3 text-slate-700">
+                    ₹{a.budgetCr}
+                  </td>
+                  <td className="p-2 md:p-3 text-slate-700">
+                    {a.prevUtilization}%
+                  </td>
+                  <td className="p-2 md:p-3">
+                    <AAPStatusBadge status={a.status} />
+                  </td>
+                  <td className="p-2 md:p-3 text-[11px] md:text-xs text-slate-500 max-w-[260px] truncate">
+                    {a.lastAction}
+                  </td>
+                  <td className="p-2 md:p-3 text-right">
+                    <button
+                      onClick={() => openAAPDetail(a.stateId)}
+                      className="px-2.5 py-1.5 rounded-md text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
+                      disabled={
+                        aapDetailLoading && activeAAP?.stateId === a.stateId
+                      }
+                    >
+                      {aapDetailLoading &&
+                        activeAAP?.stateId === a.stateId ? (
+                        <span className="flex items-center gap-1">
+                          <Loader2 size={12} className="animate-spin" />
+                          Opening…
+                        </span>
+                      ) : (
+                        "Open"
+                      )}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* AAP DETAIL SLIDE-IN PANEL */}
+        {selectedAAP && (
+          <div className="mt-6 border-t border-slate-200 pt-4 animate-in slide-in-from-bottom-4 duration-300">
+            {aapDetailLoading ? (
+              <div className="flex items-center justify-center py-8 text-slate-500 text-sm">
+                <Loader2 className="mr-2 animate-spin" size={18} />
+                Fetching AAP details from /api/central/pmajay/aap/
+                {selectedAAP.stateId}
+                …
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* LEFT: Summary + Validation + Chat */}
+                <div className="lg:col-span-2">
+                  <h3 className="text-sm font-semibold text-slate-900 mb-1">
+                    {selectedAAP.stateName} – Annual Action Plan
+                  </h3>
+                  <p className="text-xs text-slate-500 mb-3">
+                    Submitted on {selectedAAP.submittedAt} · Financial Year{" "}
+                    <b>{selectedAAP.year}</b>
+                  </p>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 text-xs">
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                      <p className="text-[10px] uppercase text-slate-500 font-bold">
+                        Proposed Budget
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
+                        ₹{selectedAAP.budgetCr} Cr
+                      </p>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                      <p className="text-[10px] uppercase text-slate-500 font-bold">
+                        Prev Utilization
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
+                        {selectedAAP.prevUtilization}%
+                      </p>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                      <p className="text-[10px] uppercase text-slate-500 font-bold">
+                        Priority Districts
+                      </p>
+                      <p className="text-xs text-slate-800">
+                        {selectedAAP.priorityDistricts.join(", ")}
+                      </p>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                      <p className="text-[10px] uppercase text-slate-500 font-bold">
+                        Current Status
+                      </p>
+                      <div className="mt-1">
+                        <AAPStatusBadge status={selectedAAP.status} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* COMPONENT SPLIT & VALIDATION */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                      <p className="text-xs font-semibold text-slate-800 mb-2">
+                        Component-wise Allocation (%)
+                      </p>
+                      <ul className="text-xs text-slate-700 space-y-1">
+                        <li>
+                          Skill Development:{" "}
+                          <b>{selectedAAP.components.skillDev}%</b>
+                        </li>
+                        <li>
+                          Income Generation:{" "}
+                          <b>{selectedAAP.components.incomeGen}%</b>
+                        </li>
+                        <li>
+                          Infrastructure Support:{" "}
+                          <b>{selectedAAP.components.infraSupport}%</b>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <AAPValidationBlock aap={selectedAAP} />
+                  </div>
+
+                  {/* Existing remarks */}
+                  {selectedAAP.remarks && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3 text-xs text-amber-800">
+                      <p className="font-semibold mb-1">
+                        Previous Central Remarks
+                      </p>
+                      <p>{selectedAAP.remarks}</p>
+                      {selectedAAP.decidedAt && (
+                        <p className="mt-1 text-[10px] text-amber-700">
+                          Last updated: {selectedAAP.decidedAt}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* CHAT THREAD – WHATSAPP STYLE */}
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-semibold text-slate-800 flex items-center gap-2">
+                        <MessageCircle
+                          size={14}
+                          className="text-indigo-600"
+                        />
+                        Clarifications between State & Central
+                      </p>
+                      <span className="text-[10px] text-slate-400">
+                        Demo: appears as a shared thread on both dashboards
+                      </span>
+                    </div>
+
+                    <div
+                      ref={chatContainerRef}
+                      className="h-64 max-h-72 overflow-y-auto border border-slate-200 rounded-lg bg-slate-50 px-3 py-2 space-y-2"
+                    >
+                      {selectedAAP.messages &&
+                        selectedAAP.messages.length > 0 ? (
+                        selectedAAP.messages.map((msg) => (
+                          <div
+                            key={msg.id}
+                            className={`flex ${msg.sender === "CENTRAL"
+                                ? "justify-end"
+                                : "justify-start"
+                              }`}
+                          >
+                            <div
+                              className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs shadow-sm ${msg.sender === "CENTRAL"
+                                  ? "bg-emerald-500 text-white rounded-br-sm"
+                                  : "bg-white text-slate-800 border border-slate-200 rounded-bl-sm"
+                                }`}
+                            >
+                              <div className="text-[10px] mb-0.5 opacity-80">
+                                {msg.sender === "CENTRAL"
+                                  ? "Central PM–AJAY Cell"
+                                  : "State Nodal Officer"}
+                              </div>
+                              <div>{msg.text}</div>
+                              {msg.at && (
+                                <div
+                                  className={`mt-1 text-[9px] opacity-75 ${msg.sender === "CENTRAL"
+                                      ? "text-emerald-50"
+                                      : "text-slate-400"
+                                    }`}
+                                >
+                                  {msg.at}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-[11px] text-slate-400">
+                          No messages yet. Use the box below to ask for
+                          clarification.
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-2 flex gap-2">
+                      <input
+                        type="text"
+                        className="flex-1 border border-slate-300 rounded-full px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                        placeholder="Type a clarification or instruction to the State..."
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage(selectedAAP.stateId);
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={() =>
+                          handleSendMessage(selectedAAP.stateId)
+                        }
+                        disabled={!chatInput.trim()}
+                        className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-full text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
+                      >
+                        <Send size={14} />
+                        Send
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT: Decision panel */}
+                <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                  <p className="text-xs font-semibold text-slate-800 mb-2">
+                    Central Officer – Decision & Remarks
+                  </p>
+
+                  <textarea
+                    rows={5}
+                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-xs mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    placeholder="Enter brief justification for approval or specific changes requested from the State..."
+                    value={remarksInput}
+                    onChange={(e) => setRemarksInput(e.target.value)}
+                  />
+
+                  <div className="flex flex-col gap-2 mt-2">
+                    <button
+                      disabled={
+                        decisionLoading ||
+                        selectedAAP.status === "APPROVED"
+                      }
+                      onClick={() =>
+                        applyDecision(selectedAAP.stateId, "APPROVED")
+                      }
+                      className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60"
+                    >
+                      {decisionLoading ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
+                          Processing…
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle size={14} />
+                          Approve AAP
+                        </>
+                      )}
+                    </button>
+                    <button
+                      disabled={decisionLoading}
+                      onClick={() =>
+                        applyDecision(selectedAAP.stateId, "RETURNED")
+                      }
+                      className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 disabled:opacity-60"
+                    >
+                      <XCircle size={14} />
+                      Return / Request Changes
+                    </button>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Decisions recorded here are assumed to be synced with the
+                      central PM–AJAY portal and visible to State Nodal
+                      Officers.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
     </div>
   );
-}
+};
 
 export default CentralDashboard;
