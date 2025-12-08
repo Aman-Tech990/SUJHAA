@@ -104,7 +104,7 @@ const MySchemes = () => {
     const fetchApps = async () => {
       try {
         const res = await axios.get(
-          "http://localhost:5000/api/application/my-applications",
+          "https://sujhaa-backend.onrender.com/api/application/my-applications",
           { withCredentials: true }
         );
 

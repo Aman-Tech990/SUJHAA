@@ -190,22 +190,31 @@ const Register = () => {
               <Input name="email" onChange={handleChange} />
             </div>
 
-            {/* AADHAAR + PHONE */}
+            {/* AADHAAR + PAN */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="my-2">Aadhaar Number</Label>
                 <Input name="aadhaarNumber" onChange={handleChange} />
               </div>
               <div>
-                <Label className="my-2">Phone Number</Label>
-                <Input name="phone" onChange={handleChange} />
+                <Label className="my-2">PAN Number</Label>
+                <Input name="panNumber" onChange={handleChange} />
               </div>
+            </div>
+
+            {/*  Phone Number*/}
+            <div>
+              <Label className="my-2">Phone Number</Label>
+              <Input name="phone" onChange={handleChange} />
             </div>
 
             {/* ADDRESS */}
             <div>
-              <Label className="my-2">Address</Label>
+              <Label className="my-2">Permanent Address</Label>
               <Input name="address" onChange={handleChange} />
+
+              <Label className="my-2">Current Address</Label>
+              <Input name="currAdrress" onChange={handleChange} />
             </div>
 
             {/* DISTRICT + STATE */}

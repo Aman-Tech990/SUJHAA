@@ -85,7 +85,7 @@ const BeneficiaryForm = () => {
 
     try {
       const res = await axios.post(
-        `http://localhost:5000/api/application/apply/${selectedSchemeId}`,
+        `https://sujhaa-backend.onrender.com/api/application/apply/${selectedSchemeId}`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
