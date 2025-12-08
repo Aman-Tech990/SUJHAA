@@ -49,6 +49,7 @@ app.get("/", (req, res) => {
     });
 });
 
+
 // Routes
 app.use("/api/ocr", ocrRoutes);
 app.use("/api/auth", authRoutes);
