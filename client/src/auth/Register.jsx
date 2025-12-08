@@ -25,6 +25,11 @@ const Register = () => {
 
   const [aadhaarPreview, setAadhaarPreview] = useState(null);
 
+  // ✅ CONSENT STATE
+  const [aadhaarConsent, setAadhaarConsent] = useState(false);
+  const [panConsent, setPanConsent] = useState(false);
+
+
   const [loadingBtn, setLoadingBtn] = useState(false);   // ⭐ REGISTER LOADER
   const [otpLoading, setOtpLoading] = useState(false);    // ⭐ OTP VERIFY LOADER
 
@@ -59,6 +64,12 @@ const Register = () => {
   // ----------------------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!aadhaarConsent || !panConsent) {
+      toast.error("Please provide consent for Aadhaar & PAN verification");
+      return;
+    }
+    
     setLoadingBtn(true); // start loader
 
     const fd = new FormData();
@@ -289,6 +300,41 @@ const Register = () => {
                     className="w-32 h-20 object-cover rounded-md border"
                   />
                 )}
+              </div>
+
+              {/* ✅ CONSENT CHECKBOXES */}
+              <div className="mt-4 space-y-3 text-sm text-gray-700">
+
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={aadhaarConsent}
+                    onChange={(e) => setAadhaarConsent(e.target.checked)}
+                    className="mt-1 accent-[#1A7431]"
+                  />
+                  <span>
+                    I hereby give my <b>explicit consent</b> to use my
+                    <b> Aadhaar details</b> for identity and eligibility
+                    verification under PM-AJAY scheme.
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={panConsent}
+                    onChange={(e) => setPanConsent(e.target.checked)}
+                    className="mt-1 accent-[#1A7431]"
+                  />
+                  <span>
+                    I hereby authorize the use of my <b>PAN details</b> for
+                    financial and income verification as per government norms.
+                  </span>
+                </label>
+
+                <p className="text-xs text-gray-500">
+                  * Consent is mandatory to prevent misuse and ensure transparency.
+                </p>
               </div>
             </div>
 
