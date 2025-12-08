@@ -37,7 +37,8 @@ const StateNavbar = ({ onMenuClick }) => {
 
       localStorage.removeItem("sujhaa-state-dashboard");
       localStorage.removeItem("sujhaa-user");
-
+      sessionStorage.removeItem("sujhaa-session-aap-data");
+      sessionStorage.removeItem("sujhaa-session-aap-sent");
       navigate("/login");
     } catch (err) {
       console.log(err);

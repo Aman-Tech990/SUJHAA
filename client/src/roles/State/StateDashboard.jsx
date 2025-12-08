@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 
 /* ============================
-   ✅ STORAGE KEYS (SESSION ONLY FOR AAP)
+    STORAGE KEYS (SESSION ONLY FOR AAP)
 ============================ */
 const STATE_DASHBOARD_KEY = "sujhaa-state-dashboard";
 const AAP_STORAGE_KEY = "sujhaa-session-aap-data";
@@ -193,8 +193,16 @@ const StateDashboard = () => {
           <h3 className="text-lg font-semibold mb-4">Scheme Distribution</h3>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
-              <Pie data={schemeBreakdown} dataKey="value" cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={3}
-                label={({ value }) => `${((value / totalSchemes) * 100).toFixed(1)}%`}>
+              <Pie
+                data={schemeBreakdown}
+                dataKey="value"
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={90}
+                paddingAngle={3}
+                label={({ value }) => `${((value / totalSchemes) * 100).toFixed(1)}%`}
+              >
                 {schemeBreakdown.map((d, i) => <Cell key={i} fill={COLORS[i]} />)}
               </Pie>
               <Tooltip />
@@ -320,6 +328,295 @@ const InsightCard = ({ msg, trend }) => {
     <div className="p-4 bg-white border rounded-xl shadow-sm flex gap-3">
       <Icon className={`${color} mt-1`} />
       <p className="text-sm">{msg}</p>
+    </div>
+  );
+};
+
+/* ============================
+   AAP MODAL (PROFESSIONAL + DETAILED)
+============================ */
+const AAPModal = ({ onClose, onSave }) => {
+  const [year, setYear] = useState("2025-26");
+  const [budgetCr, setBudgetCr] = useState("");
+  const [incomeGenerationCr, setIncomeGenerationCr] = useState("");
+  const [skillDevelopmentCr, setSkillDevelopmentCr] = useState("");
+  const [infraSupportCr, setInfraSupportCr] = useState("");
+  const [focusDistricts, setFocusDistricts] = useState("");
+  const [keyOutcomes, setKeyOutcomes] = useState("");
+
+  const handleSave = () => {
+    const payload = {
+      year,
+      budgetCr: Number(budgetCr) || 0,
+      allocation: {
+        incomeGenerationCr: Number(incomeGenerationCr) || 0,
+        skillDevelopmentCr: Number(skillDevelopmentCr) || 0,
+        infrastructureSupportCr: Number(infraSupportCr) || 0,
+      },
+      focusDistricts,
+      keyOutcomes,
+      createdAt: new Date().toISOString(),
+    };
+
+    onSave(payload);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
+              <ClipboardPenLine size={20} className="text-indigo-600" />
+              Prepare Annual Action Plan (AAP)
+            </h2>
+            <p className="text-sm text-slate-500 mt-1">
+              Capture state-level priorities, budget split and expected outcomes for PM-AJAY GIA.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-500"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Form */}
+        <div className="space-y-5">
+          {/* Row 1 – Year + Total Budget */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1">
+                Financial Year
+              </label>
+              <input
+                type="text"
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="e.g., 2025-26"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500 mb-1">
+                Total Budget (₹ in Crores)
+              </label>
+              <input
+                type="number"
+                value={budgetCr}
+                onChange={(e) => setBudgetCr(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="e.g., 25"
+                min="0"
+              />
+            </div>
+          </div>
+
+          {/* Row 2 – Scheme-wise allocation */}
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-2">
+              Scheme-wise Budget Allocation (₹ in Crores)
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="border rounded-lg p-3">
+                <p className="text-xs font-semibold text-slate-600 mb-1">Income Generation</p>
+                <input
+                  type="number"
+                  value={incomeGenerationCr}
+                  onChange={(e) => setIncomeGenerationCr(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="e.g., 10"
+                  min="0"
+                />
+              </div>
+              <div className="border rounded-lg p-3">
+                <p className="text-xs font-semibold text-slate-600 mb-1">Skill Development</p>
+                <input
+                  type="number"
+                  value={skillDevelopmentCr}
+                  onChange={(e) => setSkillDevelopmentCr(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="e.g., 8"
+                  min="0"
+                />
+              </div>
+              <div className="border rounded-lg p-3">
+                <p className="text-xs font-semibold text-slate-600 mb-1">Infrastructure Support</p>
+                <input
+                  type="number"
+                  value={infraSupportCr}
+                  onChange={(e) => setInfraSupportCr(e.target.value)}
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="e.g., 7"
+                  min="0"
+                />
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-slate-400">
+              * This split helps Central quickly see how your state is prioritising GIA funds.
+            </p>
+          </div>
+
+          {/* Row 3 – Focus Districts */}
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">
+              Focus Districts / Blocks
+            </label>
+            <textarea
+              value={focusDistricts}
+              onChange={(e) => setFocusDistricts(e.target.value)}
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[70px]"
+              placeholder="e.g., Ganjam, Malkangiri, Kalahandi – SC-dominated, high backwardness index..."
+            />
+          </div>
+
+          {/* Row 4 – Key Outcomes */}
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">
+              Key Outcomes & Targets (High-level)
+            </label>
+            <textarea
+              value={keyOutcomes}
+              onChange={(e) => setKeyOutcomes(e.target.value)}
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[90px]"
+              placeholder={
+                "• 5,000 SC households to get income generation support\n" +
+                "• 3,000 youth to complete skill training & placed\n" +
+                "• 40 model SC bastis with basic infra support"
+              }
+            />
+          </div>
+        </div>
+
+        {/* Footer buttons */}
+        <div className="mt-6 flex justify-between items-center gap-3">
+          <p className="text-xs text-slate-400">
+            This AAP is stored only for this browser session (for demo). In production, it will be saved to SUJHAA backend.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 flex items-center gap-2"
+            >
+              <CheckCircle size={16} />
+              Save AAP
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ============================
+   SEND AAP MODAL
+============================ */
+const SendAAPModal = ({ onClose, onSent }) => {
+  const [remarks, setRemarks] = useState("");
+  const [isSending, setIsSending] = useState(false);
+
+  const handleSend = () => {
+    setIsSending(true);
+
+    // Simulate API call
+    setTimeout(() => {
+      const status = {
+        time: new Date().toLocaleString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        remarks,
+        referenceId: `AAP-${Date.now()}`,
+      };
+
+      onSent(status);
+      setIsSending(false);
+    }, 1200);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+              <Send size={18} className="text-green-600" />
+              Send AAP to Central Officer
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              This will mark the AAP as submitted at State Level and visible in Central dashboard.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-500"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="space-y-4">
+          <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 flex items-start gap-2">
+            <CheckCircle size={16} className="text-emerald-600 mt-0.5" />
+            <p className="text-xs text-emerald-800">
+              In live SUJHAA, this would trigger a workflow: central inbox entry + email/notification
+              to concerned PM-AJAY division.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1">
+              Remarks (optional)
+            </label>
+            <textarea
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[70px]"
+              placeholder="e.g., Requesting early approval as schemes are aligned with SC livelihood clusters..."
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSend}
+            disabled={isSending}
+            className="px-4 py-2 text-sm rounded-lg bg-green-600 text-white hover:bg-green-700 flex items-center gap-2 disabled:opacity-70"
+          >
+            {isSending ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Send size={16} />
+                Confirm & Send
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

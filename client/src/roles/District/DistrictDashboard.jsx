@@ -45,6 +45,16 @@ const RANDOM_NAMES = [
   "Chinmoy Das",
 ];
 
+const REJECTION_REASONS = [
+  "Aadhaar number mismatch with UIDAI records",
+  "Bank account inactive as per NPCI validation",
+  "Uploaded income certificate expired",
+  "Geo-tag verification outside approved village",
+  "Duplicate beneficiary detected in same household",
+  "Training enrollment proof not attached",
+  "Blurry field photo – face match failed",
+];
+
 /* -------------------------------------
       🌍 MAIN DASHBOARD COMPONENT
 ------------------------------------- */
@@ -65,6 +75,10 @@ const DistrictDashboard = () => {
   const [showLogModal, setShowLogModal] = useState(false);
 
   const [messageFilter, setMessageFilter] = useState("ALL"); // ALL | HIGH_PENDING
+
+  // ✅ Beneficiary action modal
+  const [selectedBeneficiary, setSelectedBeneficiary] = useState(null);
+
 
   // -------------------------
   // 🌐 AUTO-REFRESH (Every 8 seconds)
@@ -125,6 +139,34 @@ const DistrictDashboard = () => {
       return { ...prev, foPerformance: updatedFO };
     });
   };
+
+  // ✅ Approve beneficiary (district level)
+  const handleDistrictApprove = (beneficiaryId) => {
+    setData((prev) => ({
+      ...prev,
+      applications: prev.applications.map((b) =>
+        b.id === beneficiaryId
+          ? { ...b, status: "District Approved" }
+          : b
+      ),
+    }));
+
+    setSelectedBeneficiary(null);
+  };
+
+  const handleDistrictReject = (beneficiaryId, reason) => {
+    setData((prev) => ({
+      ...prev,
+      applications: prev.applications.map((b) =>
+        b.id === beneficiaryId
+          ? { ...b, status: "Rejected", rejectionReason: reason }
+          : b
+      ),
+    }));
+
+    setSelectedBeneficiary(null);
+  };
+
 
   return (
     <div className="p-5 space-y-6">
@@ -193,6 +235,7 @@ const DistrictDashboard = () => {
               <BeneficiaryTable
                 applications={data.applications}
                 district={district}
+                onSelectBeneficiary={setSelectedBeneficiary}
               />
             </div>
 
@@ -332,6 +375,13 @@ const DistrictDashboard = () => {
             officer={logFO}
             onClose={() => setShowLogModal(false)}
           />
+
+          <BeneficiaryDetailModal
+            beneficiary={selectedBeneficiary}
+            onClose={() => setSelectedBeneficiary(null)}
+            onApprove={handleDistrictApprove}
+            onReject={handleDistrictReject}
+          />
         </>
       )}
     </div>
@@ -400,7 +450,7 @@ const FadeLoader = () => (
 const renderKPIs = (data) => {
   const total = data.applications.length;
   const verified = data.applications.filter(
-    (a) => a.status === "Verified"
+    (a) => a.status === "Verified" || a.status === "District Approved"
   ).length;
   const pending = data.applications.filter(
     (a) => a.status === "Pending"
@@ -456,11 +506,12 @@ const renderKPIs = (data) => {
       ✨ BENEFICIARY TABLE
 ------------------------------------- */
 
-const BeneficiaryTable = ({ applications, district }) => {
+const BeneficiaryTable = ({ applications, district, onSelectBeneficiary }) => {
   const statusClasses = {
     Verified: "bg-green-100 text-green-700",
     Pending: "bg-yellow-100 text-yellow-700",
     Rejected: "bg-red-100 text-red-700",
+    "District Approved": "bg-blue-100 text-blue-700",
   };
 
   return (
@@ -476,15 +527,23 @@ const BeneficiaryTable = ({ applications, district }) => {
         <table className="w-full text-sm">
           <tbody className="divide-y divide-gray-100">
             {applications.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50 transition">
+              <tr
+                key={item.id}
+                onClick={() => onSelectBeneficiary(item)}
+                className="hover:bg-gray-50 transition cursor-pointer"
+              >
                 <td className="px-5 py-3 text-[#1A7431] font-medium">
                   {item.name}
                 </td>
                 <td className="px-5 py-3 text-gray-600">{item.scheme}</td>
                 <td className="px-5 py-3">
                   <span
-                    className={`px-2 py-1 text-xs rounded ${statusClasses[item.status]
-                      }`}
+                    title={
+                      item.status === "Rejected"
+                        ? REJECTION_REASONS[item.id.length % REJECTION_REASONS.length]
+                        : ""
+                    }
+                    className={`px-2 py-1 text-xs rounded ${statusClasses[item.status]}`}
                   >
                     {item.status}
                   </span>
@@ -1072,5 +1131,105 @@ function generateMockData(district, year) {
     liveInsights,
   };
 }
+
+const BeneficiaryDetailModal = ({
+  beneficiary,
+  onClose,
+  onApprove,
+  onReject,
+}) => {
+  const [rejectReason, setRejectReason] = useState("");
+
+  if (!beneficiary) return null;
+
+  const canApprove = beneficiary.status === "Verified";
+  const canReject =
+    beneficiary.status === "Pending" || beneficiary.status === "Verified";
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white w-[440px] rounded-xl shadow-2xl p-6 space-y-4">
+        <h3 className="font-bold text-lg text-[#1A7431]">
+          Beneficiary Verification Details
+        </h3>
+
+        {/* DETAILS */}
+        <div className="text-sm space-y-2 border rounded-lg p-4 bg-gray-50">
+          <p><b>Name:</b> {beneficiary.name}</p>
+          <p><b>Application ID:</b> {beneficiary.id}</p>
+          <p><b>Scheme:</b> {beneficiary.scheme}</p>
+          <p><b>District:</b> {beneficiary.id.split("-")[1]}</p>
+
+          <p>
+            <b>Status:</b>{" "}
+            <span className="font-semibold">{beneficiary.status}</span>
+          </p>
+
+          {beneficiary.rejectionReason && (
+            <p className="text-red-600 text-xs mt-1">
+              ❌ Rejection Reason: {beneficiary.rejectionReason}
+            </p>
+          )}
+        </div>
+
+        {/* REJECT SECTION */}
+        {canReject && (
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-gray-600">
+              Reject Reason (required if rejecting)
+            </label>
+
+            <select
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              className="w-full border rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="">Select reason</option>
+              {REJECTION_REASONS.map((r, i) => (
+                <option key={i} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* ACTION BUTTONS */}
+        <div className="flex justify-end gap-2 pt-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-1.5 text-xs bg-gray-200 rounded-lg"
+          >
+            Close
+          </button>
+
+          {canReject && (
+            <button
+              disabled={!rejectReason}
+              onClick={() => onReject(beneficiary.id, rejectReason)}
+              className={`px-4 py-1.5 text-xs rounded-lg text-white ${rejectReason
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-red-300 cursor-not-allowed"
+                }`}
+            >
+              Reject
+            </button>
+          )}
+
+          {canApprove && (
+            <button
+              onClick={() => onApprove(beneficiary.id)}
+              className="px-4 py-1.5 text-xs bg-[#1A7431] text-white rounded-lg"
+            >
+              District Approve
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 
 export default DistrictDashboard;
