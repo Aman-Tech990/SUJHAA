@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Loader2, BotIcon, Menu, Mic, MicOff } from 'lucide-react';
+import {
+  MessageCircle, X, Send, Loader2, BotIcon,
+  Mic, MicOff, Volume2, StopCircle
+} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 const LANGUAGE_OPTIONS = [
@@ -22,13 +25,57 @@ const ChatWidget = () => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  
   const [isListening, setIsListening] = useState(false);
-  
+
+  const [speakingMessageId, setSpeakingMessageId] = useState(null);
+
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
 
-  // ------------------ OPTION B : CLEAN GREETINGS ------------------
+  // ------------------ SAFETY: CLEANUP ON UNMOUNT ------------------
+  // This ensures audio stops if you navigate to a different page 
+  // or if the component is destroyed.
+  useEffect(() => {
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
+  // ----------------------------------------------------------------
+
+  // ------------------ HELPER: TEXT TO SPEECH ------------------
+  const cleanTextForSpeech = (text) => {
+    return text.replace(/[*#_`]/g, '').trim();
+  };
+
+  const speakText = (text, msgId) => {
+    if (!selectedLanguage) return;
+
+    // Stop any currently playing audio first
+    window.speechSynthesis.cancel();
+    setSpeakingMessageId(null);
+
+    const cleanText = cleanTextForSpeech(text);
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+
+    utterance.lang = SPEECH_LOCALES[selectedLanguage] || 'en-IN';
+    utterance.rate = 1;
+    utterance.pitch = 1;
+
+    utterance.onstart = () => setSpeakingMessageId(msgId);
+    // When audio finishes naturally
+    utterance.onend = () => setSpeakingMessageId(null);
+    // When audio is interrupted/cancelled
+    utterance.onerror = () => setSpeakingMessageId(null);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const stopSpeaking = () => {
+    window.speechSynthesis.cancel();
+    setSpeakingMessageId(null);
+  };
+  // -----------------------------------------------------------
+
   const initializeChat = (langCode) => {
     const greetings = {
       'en': "Welcome to SUJHAA — Ask anything about PM-AJAY.",
@@ -37,22 +84,47 @@ const ChatWidget = () => {
       'gu': "SUJHAA માં સ્વાગત — PM-AJAY વિશે પૂછો."
     };
 
-    setMessages([
-      { id: 1, text: greetings[langCode], sender: 'bot' }
-    ]);
+    const initialMsg = { id: 1, text: greetings[langCode], sender: 'bot' };
+    setMessages([initialMsg]);
+
+    // Only speak welcome message if the widget is actually open
+    if (isOpen) {
+      setTimeout(() => speakText(initialMsg.text, initialMsg.id), 500);
+    }
   };
-  // ---------------------------------------------------------------
 
   useEffect(() => {
     if (selectedLanguage) {
       initializeChat(selectedLanguage);
     }
     scrollToBottom();
-  }, [selectedLanguage, isOpen]);
+  }, [selectedLanguage]); // Removed isOpen here to prevent re-init loops
 
+  // ------------------ EFFECT: AUTO SPEAK ------------------
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+
+    // CRITICAL FIX: Do NOT start speaking if the widget is closed.
+    if (!isOpen) {
+      stopSpeaking();
+      return;
+    }
+
+    const lastMsg = messages[messages.length - 1];
+
+    // Only speak if it's a NEW message (messages length > 1) and from the bot
+    if (lastMsg && lastMsg.sender === 'bot' && messages.length > 1) {
+      speakText(lastMsg.text, lastMsg.id);
+    }
+  }, [messages, isOpen]); // Add isOpen dependency to check visibility
+  // --------------------------------------------------------
+
+  // Cleanup when closing the modal specifically
+  useEffect(() => {
+    if (!isOpen) {
+      stopSpeaking();
+    }
+  }, [isOpen]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -62,8 +134,10 @@ const ChatWidget = () => {
 
   // ------------------ VOICE INPUT ------------------
   const handleVoiceInput = () => {
+    stopSpeaking();
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
+
     if (!SpeechRecognition) {
       alert("Your browser does not support voice input.");
       return;
@@ -92,10 +166,11 @@ const ChatWidget = () => {
       recognition.start();
     }
   };
-  // -------------------------------------------------
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
+    stopSpeaking();
+
     if (!inputValue.trim() || isLoading || !selectedLanguage) return;
 
     if (isListening && recognitionRef.current) {
@@ -148,7 +223,6 @@ const ChatWidget = () => {
     setIsLoading(false);
   };
 
-  // ------------------ LANGUAGE SELECTION SCREEN ------------------
   const renderLanguageSelection = () => (
     <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
       <BotIcon size={48} className="text-orange-500 mb-4" />
@@ -168,12 +242,11 @@ const ChatWidget = () => {
       </div>
     </div>
   );
-  // --------------------------------------------------------------
 
   const renderChatInterface = () => (
     <>
       <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50">
-        
+
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -185,11 +258,10 @@ const ChatWidget = () => {
               </span>
 
               <div
-                className={`px-5 py-3 text-base rounded-2xl shadow-md ${
-                  msg.sender === "user"
-                    ? "bg-orange-500 text-white rounded-br-none"
-                    : "bg-white border border-gray-200 text-gray-800 rounded-bl-none"
-                }`}
+                className={`px-5 py-3 text-base rounded-2xl shadow-md ${msg.sender === "user"
+                  ? "bg-orange-500 text-white rounded-br-none"
+                  : "bg-white border border-gray-200 text-gray-800 rounded-bl-none"
+                  }`}
               >
                 <ReactMarkdown
                   components={{
@@ -201,6 +273,38 @@ const ChatWidget = () => {
                 >
                   {msg.text}
                 </ReactMarkdown>
+
+                {/* ------------------ AUDIO BUTTON ------------------ */}
+                {msg.sender === 'bot' && (
+                  <div className="mt-2 pt-2 border-t border-gray-100 flex justify-start">
+                    <button
+                      onClick={() => {
+                        if (speakingMessageId === msg.id) {
+                          stopSpeaking();
+                        } else {
+                          speakText(msg.text, msg.id);
+                        }
+                      }}
+                      className={`flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-full transition-all ${speakingMessageId === msg.id
+                        ? "bg-orange-100 text-orange-600 animate-pulse"
+                        : "bg-gray-50 text-gray-500 hover:bg-orange-50 hover:text-orange-500"
+                        }`}
+                      title="Read aloud"
+                    >
+                      {speakingMessageId === msg.id ? (
+                        <>
+                          <StopCircle size={14} /> Stop
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 size={14} /> Listen
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+                {/* -------------------------------------------------- */}
+
               </div>
             </div>
           </div>
@@ -217,29 +321,26 @@ const ChatWidget = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Box */}
       <div className="p-4 bg-white border-t border-gray-100">
         <form onSubmit={handleSendMessage} className="flex gap-3 max-w-4xl mx-auto w-full items-center">
-          
+
           <div className="relative flex-1">
             <input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={isListening ? "Listening..." : "Type your message here..."}
-              className={`w-full border rounded-xl pl-4 pr-12 py-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all ${
-                isListening ? "border-orange-500 bg-orange-50" : "border-gray-300"
-              }`}
+              className={`w-full border rounded-xl pl-4 pr-12 py-3 text-base focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all ${isListening ? "border-orange-500 bg-orange-50" : "border-gray-300"
+                }`}
             />
 
             <button
               type="button"
               onClick={handleVoiceInput}
-              className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full ${
-                isListening
-                  ? "bg-red-500 text-white animate-pulse"
-                  : "text-gray-400 hover:text-orange-500 hover:bg-gray-100"
-              }`}
+              className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full ${isListening
+                ? "bg-red-500 text-white animate-pulse"
+                : "text-gray-400 hover:text-orange-500 hover:bg-gray-100"
+                }`}
             >
               {isListening ? <MicOff size={20} /> : <Mic size={20} />}
             </button>
@@ -276,7 +377,7 @@ const ChatWidget = () => {
             onClick={() => setIsOpen(false)}
           />
           <div className="relative bg-white w-full max-w-lg sm:max-w-xl md:max-w-2xl h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-            
+
             <div className="bg-orange-500 p-4 flex justify-between items-center text-white">
               <div className="flex items-center gap-3">
                 <div className="bg-white/20 p-2 rounded-full">
@@ -291,12 +392,16 @@ const ChatWidget = () => {
               <div className="flex items-center gap-3">
                 {selectedLanguage && (
                   <button
-                    onClick={() => setSelectedLanguage(null)}
+                    onClick={() => {
+                      setSelectedLanguage(null);
+                      stopSpeaking();
+                    }}
                     className="text-sm border border-white/50 p-1 px-3 rounded-full hover:bg-white/20"
                   >
                     Change Language
                   </button>
                 )}
+
                 <button
                   onClick={() => setIsOpen(false)}
                   className="hover:bg-orange-600 p-2 rounded-full"

@@ -5,6 +5,8 @@ import {
   AlertTriangle,
   MapPin,
   BrainCircuit, // using just as an analysis icon
+  Loader2,
+  X
 } from 'lucide-react';
 import {
   PieChart,
@@ -18,12 +20,22 @@ import {
   YAxis,
   CartesianGrid,
 } from 'recharts';
+import axios from 'axios';
+import { toast } from 'sonner';
 
 const DistrictFeedbackAnalysis = () => {
   const [filter, setFilter] = useState('All'); // 'All', 'Positive', 'Negative'
   const [feedbacks, setFeedbacks] = useState(BASE_FEEDBACKS);
   const [lastUpdated, setLastUpdated] = useState(0);
   const [nextPoolIndex, setNextPoolIndex] = useState(0);
+
+  // 🔹 Action modal state for "Create Ticket" / "Contact Manager"
+  const [actionModalOpen, setActionModalOpen] = useState(false);
+  const [activeAction, setActiveAction] = useState(null); // 'ticket' | 'contact'
+  const [selectedFeedback, setSelectedFeedback] = useState(null);
+  const [actionForm, setActionForm] = useState({ subject: '', message: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [actionSuccess, setActionSuccess] = useState(false);
 
   // --- LIVE UPDATE: every 8 seconds ---
   useEffect(() => {
@@ -99,8 +111,115 @@ const DistrictFeedbackAnalysis = () => {
       ? feedbacks
       : feedbacks.filter((f) => f.sentiment === filter);
 
+  // 🔹 Open modal for a given action & feedback
+  const openActionModal = (actionType, feedback) => {
+    setActiveAction(actionType);
+    setSelectedFeedback(feedback);
+    setActionSuccess(false);
+
+    // pre-fill subject a bit to feel smart
+    if (actionType === 'ticket') {
+      setActionForm({
+        subject: `Critical Issue - ${feedback.center}`,
+        message: `Issue reported by ${feedback.user}: "${feedback.comment}"\n\nAction to be taken:\n- `,
+      });
+    } else {
+      setActionForm({
+        subject: `Follow-up with Center Manager - ${feedback.center}`,
+        message: `Dear Center Manager,\n\nPlease review the following feedback from ${feedback.user}:\n"${feedback.comment}"\n\nRequested action:\n- `,
+      });
+    }
+
+    setActionModalOpen(true);
+  };
+
+  const closeActionModal = () => {
+    if (isSubmitting) return; // prevent closing while submitting
+    setActionModalOpen(false);
+    setSelectedFeedback(null);
+    setActiveAction(null);
+    setActionForm({ subject: '', message: '' });
+    setActionSuccess(false);
+  };
+
+  // 🔹 Simulated + Realistic Submit Handler
+  const handleActionSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedFeedback || !activeAction) return;
+
+    if (!actionForm.subject.trim() || !actionForm.message.trim()) {
+      toast.error("Please fill subject and message.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setActionSuccess(false);
+
+    try {
+      // Small artificial delay for loader feel
+      await new Promise((res) => setTimeout(res, 1200));
+
+      // Example endpoints – you can implement these in backend:
+      const url =
+        activeAction === 'ticket'
+          ? 'http://localhost:5000/api/feedback/create-ticket'
+          : 'http://localhost:5000/api/feedback/contact-manager';
+
+      // Payload to backend
+      const payload = {
+        feedbackId: selectedFeedback.id,
+        center: selectedFeedback.center,
+        user: selectedFeedback.user,
+        rating: selectedFeedback.rating,
+        sentiment: selectedFeedback.sentiment,
+        subject: actionForm.subject,
+        message: actionForm.message,
+      };
+
+      // Call backend (you can comment this if backend not ready yet)
+      await axios.post(url, payload, { withCredentials: true }).catch(() => { });
+
+      // Update local feedback data to reflect action
+      setFeedbacks((prev) =>
+        prev.map((f) => {
+          if (f.id !== selectedFeedback.id) return f;
+
+          if (activeAction === 'ticket') {
+            return {
+              ...f,
+              ticketCreated: true,
+              ticketId: f.ticketId || `TCK-${f.id}-${new Date().getTime()}`,
+            };
+          } else {
+            return {
+              ...f,
+              lastContactedManagerAt: new Date().toISOString(),
+            };
+          }
+        })
+      );
+
+      setActionSuccess(true);
+      toast.success(
+        activeAction === 'ticket'
+          ? 'Ticket created successfully!'
+          : 'Message sent to Center Manager!'
+      );
+
+      // Auto-close modal after a short delay
+      setTimeout(() => {
+        closeActionModal();
+      }, 1000);
+    } catch (err) {
+      console.error(err);
+      toast.error('Something went wrong while processing this action.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+    <div className="p-6 space-y-6 bg-gray-50 min-h-screen relative">
       {/* --- HEADER --- */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -284,6 +403,21 @@ const DistrictFeedbackAnalysis = () => {
                       <span className="mx-1">•</span>
                       {item.date}
                     </div>
+
+                    {/* Small badges below center info showing actions */}
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {item.ticketCreated && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
+                          Ticket: {item.ticketId || 'Created'}
+                        </span>
+                      )}
+                      {item.lastContactedManagerAt && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                          Manager Contacted:{" "}
+                          {new Date(item.lastContactedManagerAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -314,11 +448,19 @@ const DistrictFeedbackAnalysis = () => {
 
                 {/* Action for Negative Feedback */}
                 {item.sentiment === 'Negative' && (
-                  <div className="mt-3 flex gap-3">
-                    <button className="text-xs font-bold text-red-600 hover:text-red-800 hover:underline">
+                  <div className="mt-3 flex flex-wrap gap-3">
+                    <button
+                      onClick={() => openActionModal('ticket', item)}
+                      className="text-xs font-bold text-red-600 hover:text-red-800 hover:underline disabled:opacity-50"
+                      disabled={isSubmitting}
+                    >
                       Create Ticket
                     </button>
-                    <button className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline">
+                    <button
+                      onClick={() => openActionModal('contact', item)}
+                      className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline disabled:opacity-50"
+                      disabled={isSubmitting}
+                    >
                       Contact Center Manager
                     </button>
                   </div>
@@ -334,6 +476,102 @@ const DistrictFeedbackAnalysis = () => {
           )}
         </div>
       </div>
+
+      {/* 🔹 ACTION MODAL (Create Ticket / Contact Manager) */}
+      {actionModalOpen && selectedFeedback && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-lg mx-4 animate-[fadeIn_0.2s_ease-out]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50/80">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">
+                  {activeAction === 'ticket' ? 'Create Support Ticket' : 'Contact Center Manager'}
+                </p>
+                <h2 className="text-sm font-bold text-gray-800">
+                  {selectedFeedback.center} • {selectedFeedback.user}
+                </h2>
+              </div>
+              <button
+                onClick={closeActionModal}
+                className="p-1 rounded-full hover:bg-gray-200 text-gray-500"
+                disabled={isSubmitting}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleActionSubmit} className="px-5 py-4 space-y-3">
+              <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600 border border-gray-100">
+                <p className="font-semibold text-gray-700 mb-1">Feedback Snapshot</p>
+                <p className="line-clamp-3 italic">
+                  "{selectedFeedback.comment}"
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">
+                  Subject
+                </label>
+                <input
+                  type="text"
+                  value={actionForm.subject}
+                  onChange={(e) =>
+                    setActionForm((prev) => ({ ...prev, subject: e.target.value }))
+                  }
+                  className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/70 focus:border-orange-500"
+                  placeholder={
+                    activeAction === 'ticket'
+                      ? 'E.g. Facility Issue - Broken Fans / Water Problem'
+                      : 'E.g. Request for Action on Hygiene Feedback'
+                  }
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-700">
+                  Message
+                </label>
+                <textarea
+                  rows={4}
+                  value={actionForm.message}
+                  onChange={(e) =>
+                    setActionForm((prev) => ({ ...prev, message: e.target.value }))
+                  }
+                  className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/70 focus:border-orange-500 resize-y"
+                  placeholder={
+                    activeAction === 'ticket'
+                      ? 'Describe the issue, expected resolution, and urgency...'
+                      : 'Write a short note to the Center Manager explaining what action is expected...'
+                  }
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              {/* Footer Actions */}
+              <div className="flex items-center justify-between pt-2 border-t border-gray-100 mt-2">
+                <p className="text-[10px] text-gray-400">
+                  This action will be logged in the district QA system.
+                </p>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-orange-600 hover:bg-orange-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting && <Loader2 size={14} className="animate-spin" />}
+                  {actionSuccess
+                    ? 'Done'
+                    : activeAction === 'ticket'
+                      ? 'Create Ticket'
+                      : 'Send Message'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -481,3 +719,4 @@ const FEEDBACK_POOL = [
     confidence: 90,
   },
 ];
+

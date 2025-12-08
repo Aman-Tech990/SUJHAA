@@ -132,7 +132,7 @@ const DistrictDashboard = () => {
       <div className="flex flex-col md:flex-row justify-between items-start">
         <div>
           <h1 className="text-2xl font-extrabold text-[#1A7431]">
-            SUJHAA — District Dashboard
+            District Dashboard
           </h1>
           <p className="text-xs text-gray-600">
             Real-Time PM–AJAY GIA Monitoring • {district}
@@ -268,8 +268,8 @@ const DistrictDashboard = () => {
                   <button
                     onClick={() => setMessageFilter("ALL")}
                     className={`px-3 py-1 text-[11px] rounded-lg border ${messageFilter === "ALL"
-                        ? "bg-[#1A7431] text-white border-[#1A7431]"
-                        : "bg-white text-gray-700"
+                      ? "bg-[#1A7431] text-white border-[#1A7431]"
+                      : "bg-white text-gray-700"
                       }`}
                   >
                     All
@@ -277,8 +277,8 @@ const DistrictDashboard = () => {
                   <button
                     onClick={() => setMessageFilter("HIGH_PENDING")}
                     className={`px-3 py-1 text-[11px] rounded-lg border ${messageFilter === "HIGH_PENDING"
-                        ? "bg-[#FF7A00] text-white border-[#FF7A00]"
-                        : "bg-white text-gray-700"
+                      ? "bg-[#FF7A00] text-white border-[#FF7A00]"
+                      : "bg-white text-gray-700"
                       }`}
                   >
                     High Pending
@@ -521,8 +521,8 @@ const FOLeaderboard = ({ data, onSendMessage, onViewLog }) => {
           <div
             key={i}
             className={`flex justify-between items-center p-3 rounded-lg border text-sm ${highPending
-                ? "border-orange-300 bg-orange-50"
-                : "border-gray-200 bg-gray-50"
+              ? "border-orange-300 bg-orange-50"
+              : "border-gray-200 bg-gray-50"
               }`}
           >
             <div className="space-y-0.5">

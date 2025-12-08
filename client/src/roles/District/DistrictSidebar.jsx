@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, FileBarChart, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, FileBarChart, MessageSquare, BookDashed } from 'lucide-react';
 
 const DistrictSidebar = ({ onLinkClick }) => {
 
@@ -14,6 +14,11 @@ const DistrictSidebar = ({ onLinkClick }) => {
       name: 'Projects Analysis',
       path: '/districtOfficer/projectProgress',
       icon: LayoutDashboard
+    },
+    {
+      name: 'Assign Training',
+      path: '/districtOfficer/assignTraining',
+      icon: BookDashed
     },
     {
       name: 'User Feedback',

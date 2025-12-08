@@ -1,17 +1,57 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Filter } from 'lucide-react';
+import { Search } from 'lucide-react';
 import SchemeCard from '@/cards/SchemeCard';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+
+// 🌐 LANGUAGE SWITCHER
+const LanguageSwitcher = () => {
+  const { i18n } = useTranslation();
+  const current = i18n.language?.slice(0, 2) || "en";
+
+  const btn =
+    "px-2 py-1 text-xs rounded-full border transition-all hover:border-orange-400 hover:text-orange-600";
+
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        onClick={() => i18n.changeLanguage("en")}
+        className={`${btn} ${current === "en" ? "bg-orange-50 border-orange-500 text-orange-700" : "border-slate-300 text-slate-600"}`}
+      >
+        EN
+      </button>
+
+      <button
+        onClick={() => i18n.changeLanguage("hi")}
+        className={`${btn} ${current === "hi" ? "bg-orange-50 border-orange-500 text-orange-700" : "border-slate-300 text-slate-600"}`}
+      >
+        हिंदी
+      </button>
+
+      <button
+        onClick={() => i18n.changeLanguage("od")}
+        className={`${btn} ${current === "od" ? "bg-orange-50 border-orange-500 text-orange-700" : "border-slate-300 text-slate-600"}`}
+      >
+        ଓଡ଼ିଆ
+      </button>
+    </div>
+  );
+};
 
 const BeneficiaryDashboard = () => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const [schemes, setSchemes] = useState([]);
   const [filteredSchemes, setFilteredSchemes] = useState([]);
   const [activeCategory, setActiveCategory] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const user = JSON.parse(localStorage.getItem("sujhaa-user"));
+
+  // 🔹 FETCH SCHEMES
   useEffect(() => {
     const fetchSchemes = async () => {
       try {
@@ -19,29 +59,28 @@ const BeneficiaryDashboard = () => {
 
         if (res.data.success) {
           setSchemes(res.data.schemes);
-          setFilteredSchemes(res.data.schemes); // default view
+          setFilteredSchemes(res.data.schemes);
         }
       } catch (error) {
-        toast.error(error?.response?.data?.message || "Failed to fetch schemes");
+        toast.error(error?.response?.data?.message || t("fetch_error"));
       }
     };
 
     fetchSchemes();
-  }, []);
+  }, [t]);
 
-  // 🟦 CATEGORY FILTER FUNCTION
+  // 🔹 CATEGORY FILTER
   const filterByCategory = (category) => {
     setActiveCategory(category);
 
     let filtered = schemes;
 
     if (category !== "ALL") {
-      filtered = schemes.filter(scheme => scheme.category === category);
+      filtered = schemes.filter((scheme) => scheme.category === category);
     }
 
-    // Also apply search query on top of category filter
-    if (searchQuery.trim() !== "") {
-      filtered = filtered.filter(scheme =>
+    if (searchQuery.trim()) {
+      filtered = filtered.filter((scheme) =>
         scheme.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         scheme.description.toLowerCase().includes(searchQuery.toLowerCase())
       );
@@ -50,72 +89,82 @@ const BeneficiaryDashboard = () => {
     setFilteredSchemes(filtered);
   };
 
-  // 🟥 SEARCH FUNCTION
+  // 🔹 SEARCH BOX
   const handleSearch = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
 
     let result = schemes;
 
-    // Apply category filter
     if (activeCategory !== "ALL") {
-      result = result.filter(scheme => scheme.category === activeCategory);
+      result = result.filter((scheme) => scheme.category === activeCategory);
     }
 
-    // Apply text search
-    if (query.trim() !== "") {
-      result = result.filter(scheme =>
-        scheme.name.toLowerCase().includes(query.toLowerCase()) ||
-        scheme.description.toLowerCase().includes(query.toLowerCase())
+    if (query.trim()) {
+      result = result.filter(
+        (scheme) =>
+          scheme.name.toLowerCase().includes(query.toLowerCase()) ||
+          scheme.description.toLowerCase().includes(query.toLowerCase())
       );
     }
 
     setFilteredSchemes(result);
   };
 
-  const user = JSON.parse(localStorage.getItem("sujhaa-user"));
-  const navigate = useNavigate();
   const handleApply = (scheme) => {
-    navigate("/beneficiary/beneficiaryForm", { state: { schemeId: scheme._id } });
+    navigate("/beneficiary/beneficiaryForm", {
+      state: { schemeId: scheme._id },
+    });
   };
 
   return (
     <div className="space-y-8 p-4 bg-gray-50 min-h-screen">
 
-      {/* Welcome Header */}
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      {/* HEADER */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-            Welcome back, {user?.name}! 👋
+            {t("welcome_back")}, {user?.name}! 👋
           </h1>
+
           <p className="text-sm text-gray-500">
-            Digital ID: <span className="font-semibold">{user?.digitalId}</span><br />
-            Location: {user?.address}, {user?.district}, {user?.state}
+            {t("digital_id")}: <span className="font-semibold">{user?.digitalId}</span><br />
+            {t("location")}: {user?.address}, {user?.district}, {user?.state}
           </p>
+
           {user?.isVerified ? (
-            <p className="text-green-600 text-sm font-semibold">✔ Verified Beneficiary</p>
+            <p className="text-green-600 text-sm font-semibold">
+              {t("verified_beneficiary")}
+            </p>
           ) : (
-            <p className="text-red-600 text-sm font-semibold">❌ Pending Verification</p>
+            <p className="text-red-600 text-sm font-semibold">
+              {t("pending_verification")}
+            </p>
           )}
         </div>
+
+        {/* LANGUAGE BUTTONS */}
+        <LanguageSwitcher />
       </div>
 
-      {/* Header */}
+      {/* TITLE */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">Recommended Schemes</h2>
+        <h2 className="text-xl font-bold text-gray-900">
+          {t("recommended_schemes")}
+        </h2>
       </div>
 
-      {/* 🟦 CATEGORY TABS + SEARCH */}
+      {/* CATEGORY FILTERS + SEARCH */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
 
-        {/* Category Tabs */}
+        {/* CATEGORY TABS */}
         <div className="flex flex-wrap gap-2">
           {[
-            { label: "All", value: "ALL" },
-            { label: "Income Generation", value: "INCOME_GENERATION" },
-            { label: "Infrastructure Support", value: "INFRASTRUCTURE_SUPPORT" },
-            { label: "Skill Development", value: "SKILL_DEVELOPMENT" },
-          ].map(tab => (
+            { label: t("category_ALL"), value: "ALL" },
+            { label: t("category_INCOME_GENERATION"), value: "INCOME_GENERATION" },
+            { label: t("category_INFRASTRUCTURE_SUPPORT"), value: "INFRASTRUCTURE_SUPPORT" },
+            { label: t("category_SKILL_DEVELOPMENT"), value: "SKILL_DEVELOPMENT" },
+          ].map((tab) => (
             <button
               key={tab.value}
               onClick={() => filterByCategory(tab.value)}
@@ -129,31 +178,25 @@ const BeneficiaryDashboard = () => {
           ))}
         </div>
 
-        {/* Search Box */}
+        {/* SEARCH BOX */}
         <div className="relative w-full md:w-72">
           <Search className="absolute left-3 top-3 text-gray-500" size={18} />
           <input
             type="text"
-            placeholder="Search schemes..."
+            placeholder={t("search_schemes")}
             value={searchQuery}
             onChange={handleSearch}
             className="w-full pl-10 pr-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-600 outline-none"
           />
         </div>
-
       </div>
 
-      {/* Schemes Grid */}
+      {/* SCHEMES GRID */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
         {filteredSchemes.map((scheme) => (
-          <SchemeCard
-            key={scheme._id}
-            scheme={scheme}
-            onApply={handleApply}
-          />
+          <SchemeCard key={scheme._id} scheme={scheme} onApply={handleApply} />
         ))}
       </div>
-
     </div>
   );
 };

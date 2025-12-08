@@ -48,6 +48,7 @@ import Login from './auth/Login';
 
 // Landing
 import LandingPage from './pages/LandingPage';
+import DistrictAssignTraining from './roles/District/DistrictAssignTraining';
 
 
 // TODO LATER:
@@ -99,6 +100,7 @@ const App = () => {
         { path: "projectProgress", element: <ProjectProgress /> },
         { path: "feedbackAnalysis", element: <DistrictFeedbackAnalysis /> },
         { path: "application/:id", element: <DistrictBeneficiaryForm /> },
+        { path: "assignTraining", element: <DistrictAssignTraining /> },
       ]
     },
     {
