@@ -206,7 +206,15 @@ i18n
           category_ALL: "सभी",
           category_INCOME_GENERATION: "आय सृजन",
           category_INFRASTRUCTURE_SUPPORT: "बुनियादी ढांचा समर्थन",
-          category_SKILL_DEVELOPMENT: "कौशल विकास"
+          category_SKILL_DEVELOPMENT: "कौशल विकास",
+          "Registration Process on SUJHAA": "SUJHAA पर पंजीकरण प्रक्रिया",
+
+          "Follow this video for proper guidance on SUJHAA Registration and other processes.":
+            "SUJHAA पंजीकरण एवं अन्य प्रक्रियाओं की सही जानकारी के लिए इस वीडियो को देखें।",
+
+          "To make each individual accessible and feasible with SUJHAA Portal for seamless experience.":
+            "SUJHAA पोर्टल के माध्यम से प्रत्येक व्यक्ति को सहज और सुलभ डिजिटल अनुभव प्रदान करना।",
+
         },
       },
 
@@ -304,7 +312,15 @@ i18n
           category_ALL: "ସମସ୍ତ",
           category_INCOME_GENERATION: "ଆୟ ସୃଷ୍ଟି",
           category_INFRASTRUCTURE_SUPPORT: "ଢାଞ୍ଚାଗତ ସହଯୋଗ",
-          category_SKILL_DEVELOPMENT: "ଦକ୍ଷତା ବିକାଶ"
+          category_SKILL_DEVELOPMENT: "ଦକ୍ଷତା ବିକାଶ",
+          // ✅ Video Guide – Odia
+          "Registration Process on SUJHAA": "SUJHAA ରେ ପଞ୍ଜିକରଣ ପ୍ରକ୍ରିୟା",
+
+          "Follow this video for proper guidance on SUJHAA Registration and other processes.":
+            "SUJHAA ପଞ୍ଜିକରଣ ଏବଂ ଅନ୍ୟାନ୍ୟ ପ୍ରକ୍ରିୟା ସମ୍ବନ୍ଧିତ ସଠିକ୍ ମାର୍ଗଦର୍ଶନ ପାଇଁ ଏହି ଭିଡିଓ ଦେଖନ୍ତୁ।",
+
+          "To make each individual accessible and feasible with SUJHAA Portal for seamless experience.":
+            "SUJHAA ପୋର୍ଟାଲ୍ ମାଧ୍ୟମରେ ପ୍ରତ୍ୟେକ ଲାଭାର୍ଥୀଙ୍କୁ ସହଜ ଏବଂ ସମନ୍ୱୟମୟ ଡିଜିଟାଲ୍ ଅନୁଭୂତି ପ୍ରଦାନ କରିବା।",
         },
       },
     },
