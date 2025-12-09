@@ -55,7 +55,7 @@ const BeneficiaryDashboard = () => {
   useEffect(() => {
     const fetchSchemes = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/schemes/all");
+        const res = await axios.get("https://sujhaa-backend.onrender.com/api/schemes/all");
 
         if (res.data.success) {
           setSchemes(res.data.schemes);
