@@ -6,39 +6,6 @@ import { toast } from 'sonner';
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
-// 🌐 LANGUAGE SWITCHER
-const LanguageSwitcher = () => {
-  const { i18n } = useTranslation();
-  const current = i18n.language?.slice(0, 2) || "en";
-
-  const btn =
-    "px-2 py-1 text-xs rounded-full border transition-all hover:border-orange-400 hover:text-orange-600";
-
-  return (
-    <div className="flex items-center gap-1">
-      <button
-        onClick={() => i18n.changeLanguage("en")}
-        className={`${btn} ${current === "en" ? "bg-orange-50 border-orange-500 text-orange-700" : "border-slate-300 text-slate-600"}`}
-      >
-        EN
-      </button>
-
-      <button
-        onClick={() => i18n.changeLanguage("hi")}
-        className={`${btn} ${current === "hi" ? "bg-orange-50 border-orange-500 text-orange-700" : "border-slate-300 text-slate-600"}`}
-      >
-        हिंदी
-      </button>
-
-      <button
-        onClick={() => i18n.changeLanguage("od")}
-        className={`${btn} ${current === "od" ? "bg-orange-50 border-orange-500 text-orange-700" : "border-slate-300 text-slate-600"}`}
-      >
-        ଓଡ଼ିଆ
-      </button>
-    </div>
-  );
-};
 
 const BeneficiaryDashboard = () => {
   const { t } = useTranslation();
@@ -142,9 +109,6 @@ const BeneficiaryDashboard = () => {
             </p>
           )}
         </div>
-
-        {/* LANGUAGE BUTTONS */}
-        <LanguageSwitcher />
       </div>
 
       {/* TITLE */}

@@ -4,6 +4,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { X } from 'lucide-react';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
+import ChatWidget from '@/pages/ChatWidget';
 
 const BeneficiaryLayout = () => {
   // State to toggle the mobile sidebar
@@ -41,19 +42,19 @@ const BeneficiaryLayout = () => {
         {isMobileSidebarOpen && (
           <div className="fixed inset-0 z-50 flex md:hidden">
             {/* Dark Backdrop - Closes menu when clicked */}
-            <div 
-              className="fixed inset-0 bg-black/50 transition-opacity" 
-              onClick={() => setIsMobileSidebarOpen(false)}/>
+            <div
+              className="fixed inset-0 bg-black/50 transition-opacity"
+              onClick={() => setIsMobileSidebarOpen(false)} />
             {/* Sliding Drawer */}
             <div className="relative flex w-64 flex-col bg-white shadow-xl">
               {/* Header inside Mobile Menu */}
               <div className="flex items-center justify-between border-b p-4">
-                 <span className="font-bold text-lg text-gray-800">Menu</span>
-                 <button 
-                   onClick={() => setIsMobileSidebarOpen(false)}
-                   className="rounded-full p-1 hover:bg-gray-100">
-                   <X size={24} className="text-gray-600" />
-                 </button>
+                <span className="font-bold text-lg text-gray-800">Menu</span>
+                <button
+                  onClick={() => setIsMobileSidebarOpen(false)}
+                  className="rounded-full p-1 hover:bg-gray-100">
+                  <X size={24} className="text-gray-600" />
+                </button>
               </div>
               {/* Sidebar Content 
                   We pass 'onLinkClick' so the menu closes when a user selects a page.
@@ -68,13 +69,14 @@ const BeneficiaryLayout = () => {
             Takes remaining width (flex-1).
             Scrolls independently (overflow-y-auto).
         */}
-        
+
         {/* 3. UPDATED MAIN TAG: Added ref={mainContentRef} */}
-        <main 
-            ref={mainContentRef} 
-            className="flex-1 overflow-y-auto pl-4 sm:pl-6 lg:pl-8"
+        <main
+          ref={mainContentRef}
+          className="flex-1 overflow-y-auto pl-4 sm:pl-6 lg:pl-8"
         >
           <Outlet />
+          <ChatWidget />
         </main>
       </div>
     </div>

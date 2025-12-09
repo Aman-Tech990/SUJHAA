@@ -2,11 +2,11 @@ import React from 'react';
 import { Phone, Mail, MapPin, Clock, Headphones } from 'lucide-react';
 
 const BeneficiaryHelp = () => {
-  
+
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8">
-      
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Help & Support</h1>
@@ -15,7 +15,7 @@ const BeneficiaryHelp = () => {
 
       {/* Contact Cards Container */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
+
         {/* 1. Toll-Free Helpline Card */}
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 flex flex-col items-center text-center hover:shadow-md transition-shadow">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 text-green-700">
@@ -25,10 +25,10 @@ const BeneficiaryHelp = () => {
           <p className="text-gray-500 mb-6 text-sm">
             Available Mon-Sat, 9:00 AM to 6:00 PM for general queries and grievance redressal.
           </p>
-          
+
           <a href="tel:1800-11-0000" className="bg-green-700 hover:bg-green-800 text-white px-8 py-3 rounded-xl font-bold text-lg flex items-center gap-2 transition-colors">
             <Phone size={20} />
-            1800-11-0000
+            +91-11-24364468
           </a>
           <span className="text-xs text-green-600 mt-2 font-medium bg-green-50 px-2 py-1 rounded">Toll-Free Number</span>
         </div>
