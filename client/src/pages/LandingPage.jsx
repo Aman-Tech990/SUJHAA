@@ -445,6 +445,65 @@ const AboutSection = () => {
   );
 };
 
+const VideoGuide = () => {
+  const { t } = useTranslation();
+  const VIDEO_URL = "https://youtu.be/TH0EGRd4FHc";
+  const THUMBNAIL_URL = "/SUJHAA-Guide.png";
+
+  return (
+    <section id="about" className="py-20 bg-slate-50">
+      <div className="container mx-auto px-4 max-w-6xl">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="text-left space-y-6">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-blue-900">
+              {t("Registration Process on SUJHAA")}
+            </h2>
+
+            <p className="text-lg text-slate-600 leading-relaxed">
+              {t("Follow this video for proper guidance on SUJHAA Registration and other processes.")}
+            </p>
+
+            <div className="h-1 w-24 bg-amber-400 rounded-full"></div>
+
+            <div className="bg-white border-l-4 border-blue-600 p-5 shadow-sm rounded-r-lg">
+              <p className="text-lg text-slate-700 font-medium">
+                <span className="text-blue-700 font-bold block mb-1">
+                  {t("about_vision_heading")}
+                </span>
+                {t("To make each individual accessible and feasible with SUJHAA Portal for seamless experience.")}
+              </p>
+            </div>
+          </div>
+
+          <a
+            href={VIDEO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative block w-full aspect-video rounded-2xl overflow-hidden shadow-xl ring-1 ring-slate-200"
+          >
+            <img
+              src={THUMBNAIL_URL}
+              alt="Watch Video"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-300" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="bg-red-600 text-white rounded-full p-5 shadow-2xl transform transition-all duration-300 group-hover:scale-110 group-hover:bg-red-700 pl-6">
+                <Play size={32} fill="currentColor" />
+              </div>
+            </div>
+            <div className="absolute bottom-4 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">
+              <span className="bg-black/70 text-white text-sm px-4 py-1 rounded-full backdrop-blur-sm">
+                {t("about_watch_youtube")} ↗
+              </span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+};
+
 const PillarsSection = () => {
   const { t } = useTranslation();
 
@@ -605,6 +664,7 @@ const LandingPage = () => {
         <SchemeCategories />
         <ProcessSection />
         <AboutSection />
+        <VideoGuide />
       </main>
       <Footer />
       <ChatWidget />

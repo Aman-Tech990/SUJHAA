@@ -205,7 +205,7 @@ const MySchemes = () => {
             Beneficiary Dashboard
           </span>
         </div>
-        <h1 className="text-4xl md:text-5xl font-extrabold text-slate-800 tracking-tight mb-3 bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-600 py-2">
+        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight mb-3 bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-600 py-2">
           My Applications
         </h1>
         <p className="text-slate-500 text-lg max-w-2xl mx-auto">
@@ -249,7 +249,7 @@ const MySchemes = () => {
                         <Calendar size={14} /> {new Date(scheme.applied_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
                     </div>
-                    <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-2">{scheme.scheme_id?.name}</h2>
+                    <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-2">{scheme.scheme_id?.name}</h2>
                     <p className="text-slate-500 text-sm">Track your application progress through each verification stage</p>
                   </div>
 
@@ -263,7 +263,7 @@ const MySchemes = () => {
                     <button
                       onClick={() => openGrievanceModal(scheme)}
                       className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white p-2 px-5 rounded-full text-sm font-semibold flex items-center gap-2 shadow-lg shadow-indigo-200 transition-all hover:scale-105 active:scale-95 hover:shadow-xl">
-                      <MessageSquare size={16} /> Help
+                      <MessageSquare size={14} /> Help
                     </button>
                   </div>
                 </div>
